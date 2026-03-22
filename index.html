@@ -2,29 +2,33 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>ЛИНИЯ</title>
     <link rel="manifest" href="manifest.json">
     <style>
-        /* Основные стили, чтобы всё было по центру и на весь экран */
         body, html { 
             margin: 0; padding: 0; width: 100%; height: 100%; 
             background: #1a1a1a; overflow: hidden; 
-            display: flex; justify-content: center; align-items: center; 
+            display: flex; justify-content: center; align-items: center;
         }
         #calendar-container { 
             position: relative; width: 100%; height: 100%; 
-            display: flex; justify-content: center; align-items: center; 
+            display: flex; justify-content: center; align-items: center;
+            background: #1a1a1a;
         }
-        img { 
+        /* Стили для плавного наложения картинок */
+        .page-img { 
+            position: absolute;
             max-width: 100%; max-height: 100%; 
-            object-fit: contain; display: block;
-            transition: opacity 0.2s ease-in; /* Плавное проявление */
+            object-fit: contain; 
+            transition: opacity 0.4s ease-in-out; /* Плавность перехода */
+            opacity: 0;
         }
-        /* Зоны для клика (лево/право) */
+        .active { opacity: 1; z-index: 2; }
+        
         .nav-zone { 
             position: absolute; top: 0; width: 45%; height: 100%; 
-            z-index: 10; cursor: pointer; 
+            z-index: 100; cursor: pointer; 
             -webkit-tap-highlight-color: transparent; 
         }
         .prev { left: 0; }
@@ -34,14 +38,16 @@
 <body>
     <div id="calendar-container">
         <div class="nav-zone prev" onclick="changePage(-1)"></div>
-        <img id="display-image" src="" alt="Загрузка...">
+        <img id="img1" class="page-img active" src="" alt="">
+        <img id="img2" class="page-img" src="" alt="">
         <div class="nav-zone next" onclick="changePage(1)"></div>
     </div>
 
     <script>
         let currentPage;
         const totalFiles = 378;
-        const OFFSET = 4; // Твой проверенный офсет для 22 марта
+        const OFFSET = 4;
+        let activeLayer = 1;
 
         function formatNumber(num) {
             return num.toString().padStart(3, '0');
@@ -55,38 +61,35 @@
             return Math.floor(diff / oneDay);
         }
 
-        // Предзагрузка следующей и предыдущей картинки в кэш
-        function preloadNeighbors(page) {
-            [page - 1, page + 1].forEach(p => {
-                let targetPage = p;
-                if (targetPage < 1) targetPage = totalFiles;
-                if (targetPage > totalFiles) targetPage = 1;
-                
-                const img = new Image();
-                img.src = `pages/${formatNumber(targetPage)}.JPG`;
-            });
+        function preload(p) {
+            if (p < 1) p = totalFiles;
+            if (p > totalFiles) p = 1;
+            const img = new Image();
+            img.src = `pages/${formatNumber(p)}.JPG`;
         }
 
-        function updateImage() {
-            const imgElement = document.getElementById('display-image');
+        function updateImage(isFirstLoad = false) {
+            const nextLayer = activeLayer === 1 ? 2 : 1;
+            const currentImg = document.getElementById('img' + activeLayer);
+            const nextImg = document.getElementById('img' + nextLayer);
             const fileName = formatNumber(currentPage);
-            
-            imgElement.style.opacity = 0.7; // Легкое приглушение при смене
-            imgElement.src = `pages/${fileName}.JPG`;
+            const newSrc = `pages/${fileName}.JPG`;
 
-            imgElement.onload = function() {
-                imgElement.style.opacity = 1;
-                preloadNeighbors(currentPage); // Качаем соседей после загрузки текущей
-            };
-
-            imgElement.onerror = function() {
-                // Если нет .JPG, пробуем .jpg
-                if (!this.src.includes('.jpg')) {
-                    this.src = `pages/${fileName}.jpg`;
-                } else {
-                    this.alt = "Файл " + fileName + " не найден";
-                }
-            };
+            if (isFirstLoad) {
+                currentImg.src = newSrc;
+                currentImg.style.opacity = 1;
+                preload(currentPage + 1);
+                preload(currentPage - 1);
+            } else {
+                nextImg.src = newSrc;
+                nextImg.onload = function() {
+                    nextImg.classList.add('active');
+                    currentImg.classList.remove('active');
+                    activeLayer = nextLayer;
+                    preload(currentPage + 1);
+                    preload(currentPage - 1);
+                };
+            }
             
             localStorage.setItem('lastLinePage', currentPage);
             localStorage.setItem('lastUpdateDate', new Date().getDate());
@@ -99,7 +102,6 @@
             updateImage();
         }
 
-        // Логика автоматического открытия нужного дня
         const savedDate = localStorage.getItem('lastUpdateDate');
         const todayDate = new Date().getDate();
 
@@ -110,7 +112,7 @@
             currentPage = savedPage ? parseInt(savedPage) : (getDayOfYear() + OFFSET);
         }
         
-        updateImage();
+        updateImage(true);
     </script>
 </body>
 </html>
