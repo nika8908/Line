@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ЛИНИЯ</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        body { 
+            margin: 0; 
+            padding: 0;
+            background: #1a1a1a; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center;
+            overflow-x: hidden;
+        }
+        #calendar {
+            width: 100%;
+            max-width: 1080px;
+        }
+        img { 
+            width: 100%; 
+            height: auto; 
+            display: block; 
+            margin: 0;
+            padding: 0;
+            background: #1a1a1a;
+        }
+    </style>
+</head>
+<body>
+    <div id="calendar"></div>
+
+    <script>
+        const container = document.getElementById('calendar');
+        const totalPages = 378;
+
+        for (let i = 1; i <= totalPages; i++) {
+            const img = document.createElement('img');
+            // Путь к картинкам в твоей папке
+            img.src = `pages/${i}.jpg`; 
+            img.alt = `День ${i}`;
+            img.loading = 'lazy'; // Чтобы календарь не тормозил при загрузке
+            container.appendChild(img);
+        }
+    </script>
+</body>
+</html>
