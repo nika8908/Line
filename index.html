@@ -6,44 +6,73 @@
     <title>ЛИНИЯ</title>
     <link rel="manifest" href="manifest.json">
     <style>
-        body { 
-            margin: 0; 
-            padding: 0;
-            background: #1a1a1a; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center;
-            overflow-x: hidden;
+        body, html { 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            background: #1a1a1a; overflow: hidden; 
+            display: flex; justify-content: center; align-items: center; 
         }
-        #calendar {
-            width: 100%;
-            max-width: 1080px;
+        #calendar-container { 
+            position: relative; width: 100%; height: 100%; 
+            display: flex; justify-content: center; align-items: center; 
         }
         img { 
-            width: 100%; 
-            height: auto; 
-            display: block; 
-            margin: 0;
-            padding: 0;
-            background: #1a1a1a;
+            max-width: 100%; max-height: 100%; 
+            object-fit: contain; display: block; 
         }
+        /* Зоны для клика (лево/право) */
+        .nav-zone { 
+            position: absolute; top: 0; width: 30%; height: 100%; 
+            z-index: 10; cursor: pointer; 
+        }
+        .prev { left: 0; }
+        .next { right: 0; }
     </style>
 </head>
 <body>
-    <div id="calendar"></div>
+    <div id="calendar-container">
+        <div class="nav-zone prev" onclick="changePage(-1)"></div>
+        <img id="display-image" src="" alt="Загрузка...">
+        <div class="nav-zone next" onclick="changePage(1)"></div>
+    </div>
 
     <script>
-        const container = document.getElementById('calendar');
-        const totalPages = 378;
+        let currentPage;
+        const totalFiles = 378;
 
-        for (let i = 1; i <= totalPages; i++) {
-            const img = document.createElement('img');
-            // Путь к картинкам в твоей папке
-            img.src = `pages/${i}.jpg`; 
-            img.alt = `День ${i}`;
-            img.loading = 'lazy'; // Чтобы календарь не тормозил при загрузке
-            container.appendChild(img);
+        // Функция определяет номер дня в году (сегодня 22 марта = 81-й день)
+        function getDayOfYear() {
+            const now = new Date();
+            const start = new Date(now.getFullYear(), 0, 0);
+            const diff = now - start;
+            const oneDay = 1000 * 60 * 60 * 24;
+            return Math.floor(diff / oneDay);
         }
+
+        function updateImage() {
+            // ВАЖНО: здесь теперь .JPG (большими буквами)
+            const imgElement = document.getElementById('display-image');
+            imgElement.src = `pages/${currentPage}.JPG`;
+            
+            // Сохраняем выбор пользователя, чтобы при случайном выходе он не сбросился
+            localStorage.setItem('lastViewedPage', currentPage);
+        }
+
+        function changePage(step) {
+            currentPage += step;
+            if (currentPage < 1) currentPage = totalFiles;
+            if (currentPage > totalFiles) currentPage = 1;
+            updateImage();
+        }
+
+        // Логика запуска: сначала проверяем, не листал ли пользователь раньше, 
+        // если нет — открываем сегодняшний день.
+        const savedPage = localStorage.getItem('lastViewedPage');
+        currentPage = savedPage ? parseInt(savedPage) : getDayOfYear();
+        
+        // Если файлов 378, а сегодня 81-й день, но у тебя в начале обложки, 
+        // можно вручную прибавить число обложек: currentPage += 1;
+
+        updateImage();
     </script>
 </body>
 </html>
