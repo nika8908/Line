@@ -1,7 +1,47 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ЛИНИЯ</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        /* Основные стили, чтобы всё было по центру и на весь экран */
+        body, html { 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            background: #1a1a1a; overflow: hidden; 
+            display: flex; justify-content: center; align-items: center; 
+        }
+        #calendar-container { 
+            position: relative; width: 100%; height: 100%; 
+            display: flex; justify-content: center; align-items: center; 
+        }
+        img { 
+            max-width: 100%; max-height: 100%; 
+            object-fit: contain; display: block;
+            transition: opacity 0.2s ease-in; /* Плавное проявление */
+        }
+        /* Зоны для клика (лево/право) */
+        .nav-zone { 
+            position: absolute; top: 0; width: 45%; height: 100%; 
+            z-index: 10; cursor: pointer; 
+            -webkit-tap-highlight-color: transparent; 
+        }
+        .prev { left: 0; }
+        .next { right: 0; }
+    </style>
+</head>
+<body>
+    <div id="calendar-container">
+        <div class="nav-zone prev" onclick="changePage(-1)"></div>
+        <img id="display-image" src="" alt="Загрузка...">
+        <div class="nav-zone next" onclick="changePage(1)"></div>
+    </div>
+
     <script>
         let currentPage;
         const totalFiles = 378;
-        const OFFSET = 4; // Твой выверенный офсет
+        const OFFSET = 4; // Твой проверенный офсет для 22 марта
 
         function formatNumber(num) {
             return num.toString().padStart(3, '0');
@@ -15,14 +55,15 @@
             return Math.floor(diff / oneDay);
         }
 
-        // ГЛАВНАЯ МАГИЯ: Предзагрузка соседних страниц
+        // Предзагрузка следующей и предыдущей картинки в кэш
         function preloadNeighbors(page) {
-            const neighbors = [page - 1, page + 1];
-            neighbors.forEach(p => {
-                if (p >= 1 && p <= totalFiles) {
-                    const img = new Image();
-                    img.src = `pages/${formatNumber(p)}.JPG`;
-                }
+            [page - 1, page + 1].forEach(p => {
+                let targetPage = p;
+                if (targetPage < 1) targetPage = totalFiles;
+                if (targetPage > totalFiles) targetPage = 1;
+                
+                const img = new Image();
+                img.src = `pages/${formatNumber(targetPage)}.JPG`;
             });
         }
 
@@ -30,17 +71,21 @@
             const imgElement = document.getElementById('display-image');
             const fileName = formatNumber(currentPage);
             
-            // Показываем текущую картинку
+            imgElement.style.opacity = 0.7; // Легкое приглушение при смене
             imgElement.src = `pages/${fileName}.JPG`;
 
             imgElement.onload = function() {
                 imgElement.style.opacity = 1;
-                // Как только текущая загрузилась — качаем соседние втихаря
-                preloadNeighbors(currentPage);
+                preloadNeighbors(currentPage); // Качаем соседей после загрузки текущей
             };
 
             imgElement.onerror = function() {
-                this.src = `pages/${fileName}.jpg`;
+                // Если нет .JPG, пробуем .jpg
+                if (!this.src.includes('.jpg')) {
+                    this.src = `pages/${fileName}.jpg`;
+                } else {
+                    this.alt = "Файл " + fileName + " не найден";
+                }
             };
             
             localStorage.setItem('lastLinePage', currentPage);
@@ -51,11 +96,10 @@
             currentPage += step;
             if (currentPage < 1) currentPage = totalFiles;
             if (currentPage > totalFiles) currentPage = 1;
-            
-            // При переключении делаем легкий переход, но картинка уже будет в кэше!
             updateImage();
         }
 
+        // Логика автоматического открытия нужного дня
         const savedDate = localStorage.getItem('lastUpdateDate');
         const todayDate = new Date().getDate();
 
@@ -68,3 +112,5 @@
         
         updateImage();
     </script>
+</body>
+</html>
