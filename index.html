@@ -21,14 +21,15 @@
         #calendar-container { 
             position: relative; width: 100%; height: 100%; 
             display: flex; justify-content: center; align-items: center;
+            background: #f9f9f9;
         }
         img { 
             max-width: 100%; max-height: 100%; 
             object-fit: contain; display: block;
-            transition: opacity 0.2s ease-in;
+            transition: opacity 0.3s ease;
             opacity: 0;
         }
-        img:not([src]), img[src=""] { opacity: 0 !important; }
+        /* Зоны клика */
         .nav-zone { 
             position: absolute; top: 0; width: 48%; height: 100%; 
             z-index: 100; cursor: pointer; 
@@ -41,14 +42,14 @@
 <body>
     <div id="calendar-container">
         <div class="nav-zone prev" onclick="changePage(-1)"></div>
-        <img id="main-img" src="" alt="">
+        <img id="main-img" src="" alt="Загрузка...">
         <div class="nav-zone next" onclick="changePage(1)"></div>
     </div>
 
     <script>
         let currentPage;
         const totalFiles = 378;
-        const OFFSET = 4;
+        const OFFSET = 4; // Твой проверенный офсет для 22 марта
         const imgElement = document.getElementById('main-img');
 
         function formatNumber(num) {
@@ -63,23 +64,32 @@
             return Math.floor(diff / oneDay);
         }
 
-        function updateImage() {
+        function updateImage(isFirstLoad = false) {
             const fileName = formatNumber(currentPage);
             const newSrc = `pages/${fileName}.JPG`;
-            imgElement.style.opacity = 0;
+            
+            if (!isFirstLoad) {
+                imgElement.style.opacity = 0;
+            }
 
             const tempImg = new Image();
             tempImg.src = newSrc;
+            
             tempImg.onload = function() {
                 imgElement.src = newSrc;
                 imgElement.style.opacity = 1;
+                
+                // Предзагрузка следующей в фоне
                 const next = new Image();
                 next.src = `pages/${formatNumber(currentPage + 1)}.JPG`;
             };
+
             tempImg.onerror = function() {
+                // Если нет .JPG, пробуем .jpg
                 if (!this.src.includes('.jpg')) {
-                    this.src = `pages/${fileName}.jpg`;
-                    this.onload = () => { imgElement.style.opacity = 1; };
+                    const fallback = `pages/${fileName}.jpg`;
+                    imgElement.src = fallback;
+                    imgElement.onload = () => { imgElement.style.opacity = 1; };
                 }
             };
 
@@ -94,6 +104,7 @@
             updateImage();
         }
 
+        // Логика автоматического старта
         const savedDate = localStorage.getItem('lastUpdateDate');
         const todayDate = new Date().getDate();
 
@@ -103,7 +114,8 @@
             const savedPage = localStorage.getItem('lastLinePage');
             currentPage = savedPage ? parseInt(savedPage) : (getDayOfYear() + OFFSET);
         }
-        updateImage();
+
+        updateImage(true);
     </script>
 </body>
 </html>
