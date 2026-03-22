@@ -14,20 +14,15 @@
         #calendar-container { 
             position: relative; width: 100%; height: 100%; 
             display: flex; justify-content: center; align-items: center;
-            background: #1a1a1a;
         }
-        /* Стили для плавного наложения картинок */
-        .page-img { 
-            position: absolute;
+        img { 
             max-width: 100%; max-height: 100%; 
-            object-fit: contain; 
-            transition: opacity 0.4s ease-in-out; /* Плавность перехода */
-            opacity: 0;
+            object-fit: contain; display: block;
+            transition: opacity 0.3s ease;
+            opacity: 0; /* Проявится только когда загрузится */
         }
-        .active { opacity: 1; z-index: 2; }
-        
         .nav-zone { 
-            position: absolute; top: 0; width: 45%; height: 100%; 
+            position: absolute; top: 0; width: 48%; height: 100%; 
             z-index: 100; cursor: pointer; 
             -webkit-tap-highlight-color: transparent; 
         }
@@ -38,8 +33,7 @@
 <body>
     <div id="calendar-container">
         <div class="nav-zone prev" onclick="changePage(-1)"></div>
-        <img id="img1" class="page-img active" src="" alt="">
-        <img id="img2" class="page-img" src="" alt="">
+        <img id="main-img" src="" alt="">
         <div class="nav-zone next" onclick="changePage(1)"></div>
     </div>
 
@@ -47,7 +41,7 @@
         let currentPage;
         const totalFiles = 378;
         const OFFSET = 4;
-        let activeLayer = 1;
+        const imgElement = document.getElementById('main-img');
 
         function formatNumber(num) {
             return num.toString().padStart(3, '0');
@@ -61,36 +55,39 @@
             return Math.floor(diff / oneDay);
         }
 
+        // Предзагрузка в кэш браузера
         function preload(p) {
-            if (p < 1) p = totalFiles;
-            if (p > totalFiles) p = 1;
-            const img = new Image();
-            img.src = `pages/${formatNumber(p)}.JPG`;
+            let target = p;
+            if (target < 1) target = totalFiles;
+            if (target > totalFiles) target = 1;
+            const tempImg = new Image();
+            tempImg.src = `pages/${formatNumber(target)}.JPG`;
         }
 
-        function updateImage(isFirstLoad = false) {
-            const nextLayer = activeLayer === 1 ? 2 : 1;
-            const currentImg = document.getElementById('img' + activeLayer);
-            const nextImg = document.getElementById('img' + nextLayer);
+        function updateImage() {
             const fileName = formatNumber(currentPage);
-            const newSrc = `pages/${fileName}.JPG`;
+            
+            // Сначала скрываем старую, чтобы не было "скачка"
+            imgElement.style.opacity = 0;
 
-            if (isFirstLoad) {
-                currentImg.src = newSrc;
-                currentImg.style.opacity = 1;
+            // Устанавливаем новый путь
+            const newSrc = `pages/${fileName}.JPG`;
+            imgElement.src = newSrc;
+
+            imgElement.onload = function() {
+                imgElement.style.opacity = 1;
+                // Когда текущая готова, тихо качаем соседей
                 preload(currentPage + 1);
                 preload(currentPage - 1);
-            } else {
-                nextImg.src = newSrc;
-                nextImg.onload = function() {
-                    nextImg.classList.add('active');
-                    currentImg.classList.remove('active');
-                    activeLayer = nextLayer;
-                    preload(currentPage + 1);
-                    preload(currentPage - 1);
-                };
-            }
-            
+            };
+
+            imgElement.onerror = function() {
+                // Запасной вариант для маленьких букв .jpg
+                if (!this.src.includes('.jpg')) {
+                    this.src = `pages/${fileName}.jpg`;
+                }
+            };
+
             localStorage.setItem('lastLinePage', currentPage);
             localStorage.setItem('lastUpdateDate', new Date().getDate());
         }
@@ -102,6 +99,7 @@
             updateImage();
         }
 
+        // Логика старта
         const savedDate = localStorage.getItem('lastUpdateDate');
         const todayDate = new Date().getDate();
 
@@ -111,8 +109,8 @@
             const savedPage = localStorage.getItem('lastLinePage');
             currentPage = savedPage ? parseInt(savedPage) : (getDayOfYear() + OFFSET);
         }
-        
-        updateImage(true);
+
+        updateImage();
     </script>
 </body>
 </html>
