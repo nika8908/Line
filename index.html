@@ -10,6 +10,7 @@
             margin: 0; padding: 0; width: 100%; height: 100%; 
             background: #1a1a1a; overflow: hidden; 
             display: flex; justify-content: center; align-items: center; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
         #calendar-container { 
             position: relative; width: 100%; height: 100%; 
@@ -17,11 +18,13 @@
         }
         img { 
             max-width: 100%; max-height: 100%; 
-            object-fit: contain; display: block; 
+            object-fit: contain; display: block;
+            transition: opacity 0.3s ease; /* Плавный переход между страницами */
         }
         .nav-zone { 
             position: absolute; top: 0; width: 45%; height: 100%; 
             z-index: 10; cursor: pointer; 
+            -webkit-tap-highlight-color: transparent; /* Убирает синюю вспышку при нажатии на iPhone */
         }
         .prev { left: 0; }
         .next { right: 0; }
@@ -30,15 +33,19 @@
 <body>
     <div id="calendar-container">
         <div class="nav-zone prev" onclick="changePage(-1)"></div>
-        <img id="display-image" src="" alt="Загрузка...">
+        <img id="display-image" src="" alt="Загрузка страницы...">
         <div class="nav-zone next" onclick="changePage(1)"></div>
     </div>
 
     <script>
         let currentPage;
         const totalFiles = 378;
+        
+        // --- ТВОЯ НАСТРОЙКА ---
+        // Мы прибавляем 6, чтобы попасть ровно в 22 марта
+        const OFFSET = 6; 
+        // ----------------------
 
-        // Эта функция превращает "1" в "001", "81" в "081"
         function formatNumber(num) {
             return num.toString().padStart(3, '0');
         }
@@ -55,15 +62,20 @@
             const imgElement = document.getElementById('display-image');
             const fileName = formatNumber(currentPage);
             
-            // Пробуем .JPG (как у тебя сейчас)
+            // Плавное исчезновение перед сменой
+            imgElement.style.opacity = 0.8;
+            
             imgElement.src = `pages/${fileName}.JPG`;
 
-            // Если вдруг не сработает .JPG, попробуем .jpg
+            imgElement.onload = function() {
+                imgElement.style.opacity = 1;
+            };
+
             imgElement.onerror = function() {
                 if (this.src.includes('.JPG')) {
                     this.src = `pages/${fileName}.jpg`;
                 } else {
-                    this.alt = "Файл " + fileName + " не найден";
+                    this.alt = "Страница " + fileName + " не найдена";
                 }
             };
             
@@ -77,9 +89,11 @@
             updateImage();
         }
 
-        // Старт: берем сохраненную страницу или сегодняшний день
+        // Логика старта
         const saved = localStorage.getItem('lastLinePage');
-        currentPage = saved ? parseInt(saved) : getDayOfYear();
+        // Если зашли первый раз — считаем день года + смещение
+        // Если уже заходили — открываем на чем остановились
+        currentPage = saved ? parseInt(saved) : (getDayOfYear() + OFFSET);
         
         updateImage();
     </script>
