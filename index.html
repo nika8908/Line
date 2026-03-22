@@ -19,9 +19,8 @@
             max-width: 100%; max-height: 100%; 
             object-fit: contain; display: block; 
         }
-        /* Зоны для клика (лево/право) */
         .nav-zone { 
-            position: absolute; top: 0; width: 30%; height: 100%; 
+            position: absolute; top: 0; width: 45%; height: 100%; 
             z-index: 10; cursor: pointer; 
         }
         .prev { left: 0; }
@@ -39,7 +38,11 @@
         let currentPage;
         const totalFiles = 378;
 
-        // Функция определяет номер дня в году (сегодня 22 марта = 81-й день)
+        // Эта функция превращает "1" в "001", "81" в "081"
+        function formatNumber(num) {
+            return num.toString().padStart(3, '0');
+        }
+
         function getDayOfYear() {
             const now = new Date();
             const start = new Date(now.getFullYear(), 0, 0);
@@ -49,12 +52,22 @@
         }
 
         function updateImage() {
-            // ВАЖНО: здесь теперь .JPG (большими буквами)
             const imgElement = document.getElementById('display-image');
-            imgElement.src = `pages/${currentPage}.JPG`;
+            const fileName = formatNumber(currentPage);
             
-            // Сохраняем выбор пользователя, чтобы при случайном выходе он не сбросился
-            localStorage.setItem('lastViewedPage', currentPage);
+            // Пробуем .JPG (как у тебя сейчас)
+            imgElement.src = `pages/${fileName}.JPG`;
+
+            // Если вдруг не сработает .JPG, попробуем .jpg
+            imgElement.onerror = function() {
+                if (this.src.includes('.JPG')) {
+                    this.src = `pages/${fileName}.jpg`;
+                } else {
+                    this.alt = "Файл " + fileName + " не найден";
+                }
+            };
+            
+            localStorage.setItem('lastLinePage', currentPage);
         }
 
         function changePage(step) {
@@ -64,14 +77,10 @@
             updateImage();
         }
 
-        // Логика запуска: сначала проверяем, не листал ли пользователь раньше, 
-        // если нет — открываем сегодняшний день.
-        const savedPage = localStorage.getItem('lastViewedPage');
-        currentPage = savedPage ? parseInt(savedPage) : getDayOfYear();
+        // Старт: берем сохраненную страницу или сегодняшний день
+        const saved = localStorage.getItem('lastLinePage');
+        currentPage = saved ? parseInt(saved) : getDayOfYear();
         
-        // Если файлов 378, а сегодня 81-й день, но у тебя в начале обложки, 
-        // можно вручную прибавить число обложек: currentPage += 1;
-
         updateImage();
     </script>
 </body>
