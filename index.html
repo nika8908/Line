@@ -2,30 +2,13 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ЛИНИЯ</title>
-    <link rel="manifest" href="manifest.json">
     <style>
-        body, html { 
-            margin: 0; padding: 0; width: 100%; height: 100%; 
-            background: #1a1a1a; overflow: hidden; 
-            display: flex; justify-content: center; align-items: center;
-        }
-        #calendar-container { 
-            position: relative; width: 100%; height: 100%; 
-            display: flex; justify-content: center; align-items: center;
-        }
-        img { 
-            max-width: 100%; max-height: 100%; 
-            object-fit: contain; display: block;
-            transition: opacity 0.3s ease;
-            opacity: 0; /* Проявится только когда загрузится */
-        }
-        .nav-zone { 
-            position: absolute; top: 0; width: 48%; height: 100%; 
-            z-index: 100; cursor: pointer; 
-            -webkit-tap-highlight-color: transparent; 
-        }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #1a1a1a; overflow: hidden; display: flex; justify-content: center; align-items: center; }
+        #calendar-container { position: relative; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; }
+        img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+        .nav-zone { position: absolute; top: 0; width: 48%; height: 100%; z-index: 100; cursor: pointer; -webkit-tap-highlight-color: transparent; }
         .prev { left: 0; }
         .next { right: 0; }
     </style>
@@ -33,7 +16,7 @@
 <body>
     <div id="calendar-container">
         <div class="nav-zone prev" onclick="changePage(-1)"></div>
-        <img id="main-img" src="" alt="">
+        <img id="main-img" src="">
         <div class="nav-zone next" onclick="changePage(1)"></div>
     </div>
 
@@ -55,34 +38,12 @@
             return Math.floor(diff / oneDay);
         }
 
-        // Предзагрузка в кэш браузера
-        function preload(p) {
-            let target = p;
-            if (target < 1) target = totalFiles;
-            if (target > totalFiles) target = 1;
-            const tempImg = new Image();
-            tempImg.src = `pages/${formatNumber(target)}.JPG`;
-        }
-
         function updateImage() {
             const fileName = formatNumber(currentPage);
-            
-            // Сначала скрываем старую, чтобы не было "скачка"
-            imgElement.style.opacity = 0;
-
-            // Устанавливаем новый путь
-            const newSrc = `pages/${fileName}.JPG`;
-            imgElement.src = newSrc;
-
-            imgElement.onload = function() {
-                imgElement.style.opacity = 1;
-                // Когда текущая готова, тихо качаем соседей
-                preload(currentPage + 1);
-                preload(currentPage - 1);
-            };
+            // Прямая установка пути без ожиданий и анимаций
+            imgElement.src = `pages/${fileName}.JPG`;
 
             imgElement.onerror = function() {
-                // Запасной вариант для маленьких букв .jpg
                 if (!this.src.includes('.jpg')) {
                     this.src = `pages/${fileName}.jpg`;
                 }
@@ -90,6 +51,10 @@
 
             localStorage.setItem('lastLinePage', currentPage);
             localStorage.setItem('lastUpdateDate', new Date().getDate());
+            
+            // Предзагрузка следующей картинки (в фоне)
+            const next = new Image();
+            next.src = `pages/${formatNumber(currentPage + 1)}.JPG`;
         }
 
         function changePage(step) {
@@ -99,7 +64,6 @@
             updateImage();
         }
 
-        // Логика старта
         const savedDate = localStorage.getItem('lastUpdateDate');
         const todayDate = new Date().getDate();
 
