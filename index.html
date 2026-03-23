@@ -10,12 +10,11 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="ЛИНИЯ">
     <link rel="apple-touch-icon" href="icon-512.png">
-    <link rel="icon" type="image/png" href="icon-512.png">
 
     <style>
         body, html { 
             margin: 0; padding: 0; width: 100%; height: 100%; 
-            background: #1a1a1a; /* Темный фон */
+            background: #1a1a1a; 
             overflow: hidden; 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
         }
@@ -33,7 +32,6 @@
             opacity: 0;
         }
 
-        /* Зоны клика (лево/право) */
         .nav-zone { 
             position: absolute; top: 0; width: 45%; height: 100%; 
             z-index: 10; cursor: pointer; 
@@ -42,30 +40,23 @@
         .prev { left: 0; }
         .next { right: 0; }
 
-        /* ИСПРАВЛЕННЫЙ, ЮВЕЛИРНЫЙ БУРГЕР */
         #menu-btn {
             position: absolute; 
-            /* Выровнен по Dynamic Island */
             top: env(safe-area-inset-top, 25px); 
             right: 20px; 
             z-index: 1000;
-            /* Уменьшенный размер */
             width: 26px; height: 18px; 
             display: flex; flex-direction: column; justify-content: space-between;
             cursor: pointer; 
             opacity: 0; transition: opacity 0.5s ease;
-            /* Более мягкая тень */
             filter: drop-shadow(0px 1px 1px rgba(0,0,0,0.3));
         }
         .burger-line {
-            width: 100%; 
-            /* Ювелирная толщина */
-            height: 1.2px; 
-            background: rgba(255, 255, 255, 0.95); /* Чуть мягче белый */
+            width: 100%; height: 1.2px; 
+            background: rgba(255, 255, 255, 0.95); 
             border-radius: 0.5px;
         }
 
-        /* ОКНО МЕНЮ */
         #month-menu {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.93); 
@@ -81,7 +72,6 @@
             font-weight: 300;
             letter-spacing: 1px;
         }
-        .month-item:active { background: rgba(255, 255, 255, 0.1); }
         
         .close-menu { 
             position: absolute; 
@@ -125,9 +115,15 @@
     <script>
         let currentPage;
         const totalFiles = 378;
-        const OFFSET = 4; // Твой офсет
+        const OFFSET = 4;
         const imgElement = document.getElementById('main-img');
         const menuBtn = document.getElementById('menu-btn');
+
+        // КАРТА СТРАНИЦ ПО ТВОЕМУ СПИСКУ
+        const monthPages = {
+            1: 2,   2: 34,  3: 63,  4: 95,  5: 126, 6: 158, 
+            7: 189, 8: 221, 9: 253, 10: 284, 11: 316, 12: 347
+        };
 
         function formatNumber(num) { return num.toString().padStart(3, '0'); }
 
@@ -139,14 +135,17 @@
 
         function toggleMenu(show) {
             document.getElementById('month-menu').style.display = show ? 'flex' : 'none';
+            if (show) preloadMonthStarts(); 
         }
 
-        // Переход по месяцам (на твои заставки)
+        function preloadMonthStarts() {
+            Object.values(monthPages).forEach(page => {
+                const img = new Image();
+                img.src = `pages/${formatNumber(page)}.JPG`;
+            });
+        }
+
         function goToMonth(monthIndex) {
-            const monthPages = {
-                1: 1, 2: 36, 3: 65, 4: 97, 5: 128, 6: 160, 
-                7: 191, 8: 223, 9: 255, 10: 286, 11: 318, 12: 349
-            };
             currentPage = monthPages[monthIndex];
             updateImage();
             toggleMenu(false);
@@ -162,8 +161,6 @@
             tempImg.onload = function() {
                 imgElement.src = tempImg.src;
                 imgElement.style.opacity = 1;
-                
-                // Предзагрузка следующей в фоне
                 if (currentPage < totalFiles) {
                     const next = new Image();
                     next.src = `pages/${formatNumber(currentPage + 1)}.JPG`;
@@ -188,9 +185,8 @@
             updateImage();
         }
 
-        // Запуск приложения
         function runSplash() {
-            currentPage = 1;
+            currentPage = 1; 
             updateImage(true);
             
             setTimeout(() => {
