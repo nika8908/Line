@@ -4,95 +4,148 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>ЛИНИЯ</title>
-    
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="ЛИНИЯ">
     <link rel="apple-touch-icon" href="icon-512.png">
-    <link rel="icon" type="image/png" href="icon-512.png">
 
     <style>
         body, html { 
             margin: 0; padding: 0; width: 100%; height: 100%; 
-            background: #f9f9f9; overflow: hidden; 
-            display: flex; justify-content: center; align-items: center;
+            background: #1a1a1a; 
+            overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
         }
         #calendar-container { 
             position: relative; width: 100%; height: 100%; 
-            display: flex; justify-content: center; align-items: center;
-            background: #f9f9f9;
+            display: flex; justify-content: center; align-items: center; 
         }
+        
         img { 
             max-width: 100%; max-height: 100%; 
-            object-fit: contain; display: block;
-            transition: opacity 0.3s ease;
+            object-fit: contain; 
+            display: block;
+            transition: opacity 0.4s ease;
             opacity: 0;
         }
-        /* Зоны клика */
-        .nav-zone { 
-            position: absolute; top: 0; width: 48%; height: 100%; 
-            z-index: 100; cursor: pointer; 
-            -webkit-tap-highlight-color: transparent; 
-        }
+
+        .nav-zone { position: absolute; top: 0; width: 45%; height: 100%; z-index: 10; cursor: pointer; -webkit-tap-highlight-color: transparent; }
         .prev { left: 0; }
         .next { right: 0; }
+
+        /* МИНИМАЛИСТИЧНЫЙ БУРГЕР БЕЗ КРУГА */
+        #menu-btn {
+            position: absolute; 
+            top: env(safe-area-inset-top, 25px); 
+            right: 20px; 
+            z-index: 1000;
+            width: 30px; height: 24px;
+            display: flex; flex-direction: column; justify-content: space-between;
+            cursor: pointer; 
+            opacity: 0; transition: opacity 0.5s ease;
+            /* Легкая тень, чтобы полоски не терялись на светлом фоне */
+            filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.3));
+        }
+        .burger-line {
+            width: 100%; height: 2px;
+            background: #fff;
+            border-radius: 1px;
+        }
+
+        #month-menu {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.92); 
+            z-index: 2000;
+            display: none; flex-direction: column; justify-content: center; align-items: center;
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+        }
+        .month-item { 
+            padding: 14px; font-size: 20px; color: #fff; 
+            cursor: pointer; width: 100%; text-align: center;
+            -webkit-tap-highlight-color: transparent;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+        
+        .close-menu { 
+            position: absolute; 
+            top: env(safe-area-inset-top, 20px); 
+            right: 25px; 
+            font-size: 35px; color: #fff; cursor: pointer; 
+            font-weight: 200;
+        }
     </style>
 </head>
 <body>
+
+    <div id="menu-btn" onclick="toggleMenu(true)">
+        <div class="burger-line"></div>
+        <div class="burger-line"></div>
+        <div class="burger-line"></div>
+    </div>
+
+    <div id="month-menu">
+        <div class="close-menu" onclick="toggleMenu(false)">×</div>
+        <div class="month-item" onclick="goToMonth(1)">Январь</div>
+        <div class="month-item" onclick="goToMonth(32)">Февраль</div>
+        <div class="month-item" onclick="goToMonth(61)">Март</div>
+        <div class="month-item" onclick="goToMonth(92)">Апрель</div>
+        <div class="month-item" onclick="goToMonth(122)">Май</div>
+        <div class="month-item" onclick="goToMonth(153)">Июнь</div>
+        <div class="month-item" onclick="goToMonth(183)">Июль</div>
+        <div class="month-item" onclick="goToMonth(214)">Август</div>
+        <div class="month-item" onclick="goToMonth(245)">Сентябрь</div>
+        <div class="month-item" onclick="goToMonth(275)">Октябрь</div>
+        <div class="month-item" onclick="goToMonth(306)">Ноябрь</div>
+        <div class="month-item" onclick="goToMonth(336)">Декабрь</div>
+    </div>
+
     <div id="calendar-container">
         <div class="nav-zone prev" onclick="changePage(-1)"></div>
-        <img id="main-img" src="" alt="Загрузка...">
+        <img id="main-img" src="" alt="">
         <div class="nav-zone next" onclick="changePage(1)"></div>
     </div>
 
     <script>
         let currentPage;
         const totalFiles = 378;
-        const OFFSET = 4; // Твой проверенный офсет для 22 марта
+        const OFFSET = 4;
         const imgElement = document.getElementById('main-img');
+        const menuBtn = document.getElementById('menu-btn');
 
-        function formatNumber(num) {
-            return num.toString().padStart(3, '0');
-        }
+        function formatNumber(num) { return num.toString().padStart(3, '0'); }
 
         function getDayOfYear() {
             const now = new Date();
             const start = new Date(now.getFullYear(), 0, 0);
-            const diff = now - start;
-            const oneDay = 1000 * 60 * 60 * 24;
-            return Math.floor(diff / oneDay);
+            return Math.floor((now - start) / (1000 * 60 * 60 * 24));
         }
 
-        function updateImage(isFirstLoad = false) {
+        function toggleMenu(show) {
+            document.getElementById('month-menu').style.display = show ? 'flex' : 'none';
+        }
+
+        function goToMonth(dayNumber) {
+            currentPage = dayNumber + OFFSET;
+            updateImage();
+            toggleMenu(false);
+        }
+
+        function updateImage(isSplash = false) {
             const fileName = formatNumber(currentPage);
-            const newSrc = `pages/${fileName}.JPG`;
-            
-            if (!isFirstLoad) {
-                imgElement.style.opacity = 0;
-            }
-
+            if (!isSplash) imgElement.style.opacity = 0;
             const tempImg = new Image();
-            tempImg.src = newSrc;
-            
+            tempImg.src = `pages/${fileName}.JPG`;
             tempImg.onload = function() {
-                imgElement.src = newSrc;
+                imgElement.src = tempImg.src;
                 imgElement.style.opacity = 1;
-                
-                // Предзагрузка следующей в фоне
-                const next = new Image();
-                next.src = `pages/${formatNumber(currentPage + 1)}.JPG`;
             };
-
             tempImg.onerror = function() {
-                // Если нет .JPG, пробуем .jpg
                 if (!this.src.includes('.jpg')) {
-                    const fallback = `pages/${fileName}.jpg`;
-                    imgElement.src = fallback;
-                    imgElement.onload = () => { imgElement.style.opacity = 1; };
+                    imgElement.src = `pages/${fileName}.jpg`;
+                    imgElement.onload = () => imgElement.style.opacity = 1;
                 }
             };
-
             localStorage.setItem('lastLinePage', currentPage);
             localStorage.setItem('lastUpdateDate', new Date().getDate());
         }
@@ -104,18 +157,31 @@
             updateImage();
         }
 
-        // Логика автоматического старта
-        const savedDate = localStorage.getItem('lastUpdateDate');
-        const todayDate = new Date().getDate();
-
-        if (savedDate != todayDate) {
-            currentPage = getDayOfYear() + OFFSET;
-        } else {
-            const savedPage = localStorage.getItem('lastLinePage');
-            currentPage = savedPage ? parseInt(savedPage) : (getDayOfYear() + OFFSET);
+        function runSplash() {
+            currentPage = 1;
+            updateImage(true);
+            setTimeout(() => {
+                const savedDate = localStorage.getItem('lastUpdateDate');
+                const todayDate = new Date().getDate();
+                const targetPage = getDayOfYear() + OFFSET;
+                
+                if (savedDate != todayDate || localStorage.getItem('lastLinePage') == 1) {
+                    imgElement.style.opacity = 0;
+                    setTimeout(() => {
+                        currentPage = targetPage;
+                        updateImage();
+                        menuBtn.style.opacity = 1;
+                    }, 400);
+                } else {
+                    const savedPage = localStorage.getItem('lastLinePage');
+                    currentPage = savedPage ? parseInt(savedPage) : targetPage;
+                    updateImage();
+                    menuBtn.style.opacity = 1;
+                }
+            }, 2200);
         }
 
-        updateImage(true);
+        runSplash();
     </script>
 </body>
 </html>
