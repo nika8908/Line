@@ -12,20 +12,19 @@
     <link rel="apple-touch-icon" href="icon-512.png">
 
     <style>
-        body, html { 
+        /* Убираем все системные отступы и фиксируем высоту */
+        html, body { 
             margin: 0; padding: 0; 
             width: 100%; 
-            /* 100dvh — динамическая высота на весь экран телефона */
-            height: 100dvh; 
-            background: #1a1a1a; 
+            height: 100%; 
+            background: #ffffff; /* Белый фон, чтобы низ сливался с твоей плашкой */
             overflow: hidden; 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
         }
         
         #calendar-container { 
-            position: relative; 
-            width: 100%; 
-            height: 100%; 
+            position: fixed; /* Фиксируем, чтобы избежать прыжков интерфейса */
+            top: 0; left: 0; right: 0; bottom: 0;
             display: flex; 
             justify-content: center; 
             align-items: center; 
@@ -33,6 +32,7 @@
         }
         
         img { 
+            /* Занимаем 100% видимого пространства, включая зоны под челкой и полоской Home */
             width: 100vw; 
             height: 100dvh; 
             object-fit: cover; 
@@ -49,7 +49,6 @@
         .prev { left: 0; }
         .next { right: 0; }
 
-        /* БУРГЕР (без изменений высоты, как ты просила) */
         #menu-btn {
             position: absolute; 
             top: env(safe-area-inset-top, 25px); 
