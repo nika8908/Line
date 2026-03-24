@@ -12,24 +12,19 @@
     <link rel="apple-touch-icon" href="icon-512.png">
 
     <style>
-        /* Полная блокировка любых смещений */
-        * { box-sizing: border-box; }
-        
+        /* Убираем все отступы и фиксируем экран */
         html, body { 
             margin: 0; padding: 0; 
-            width: 100%; height: 100%;
+            width: 100%; 
+            height: 100%; 
             background: #ffffff; 
-            overflow: hidden;
-            position: fixed; /* Предотвращает "прыжки" при скролле */
+            overflow: hidden; 
+            position: fixed; /* Жестко фиксируем, чтобы не было скролла и белых полос */
         }
         
         #calendar-container { 
             position: absolute; 
-            top: 0; left: 0; 
-            width: 100vw; 
-            /* Используем fill-available для поддержки всех версий iOS */
-            height: 100vh;
-            height: -webkit-fill-available;
+            top: 0; left: 0; right: 0; bottom: 0;
             display: flex; 
             justify-content: center; 
             align-items: center; 
@@ -37,18 +32,16 @@
         }
         
         img { 
-            /* Игнорируем safe-area и растягиваем в абсолют */
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; 
-            height: 100%;
+            /* Принудительно растягиваем на весь экран */
+            width: 100vw; 
+            height: 100%; 
+            min-height: 100%;
             object-fit: cover; 
             display: block;
             transition: opacity 0.4s ease;
             opacity: 0;
         }
 
-        /* Остальные стили без изменений */
         .nav-zone { 
             position: absolute; top: 0; width: 45%; height: 100%; 
             z-index: 10; cursor: pointer; 
@@ -57,10 +50,11 @@
         .prev { left: 0; }
         .next { right: 0; }
 
+        /* Твой бургер с отступом 25px от края */
         #menu-btn {
             position: absolute; 
             top: env(safe-area-inset-top, 25px); 
-            right: 20px; 
+            right: 25px; 
             z-index: 1000;
             width: 26px; height: 18px; 
             display: flex; flex-direction: column; justify-content: space-between;
