@@ -12,19 +12,24 @@
     <link rel="apple-touch-icon" href="icon-512.png">
 
     <style>
-        /* Убираем все системные отступы и фиксируем высоту */
+        /* Полная блокировка любых смещений */
+        * { box-sizing: border-box; }
+        
         html, body { 
             margin: 0; padding: 0; 
-            width: 100%; 
-            height: 100%; 
-            background: #ffffff; /* Белый фон, чтобы низ сливался с твоей плашкой */
-            overflow: hidden; 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            width: 100%; height: 100%;
+            background: #ffffff; 
+            overflow: hidden;
+            position: fixed; /* Предотвращает "прыжки" при скролле */
         }
         
         #calendar-container { 
-            position: fixed; /* Фиксируем, чтобы избежать прыжков интерфейса */
-            top: 0; left: 0; right: 0; bottom: 0;
+            position: absolute; 
+            top: 0; left: 0; 
+            width: 100vw; 
+            /* Используем fill-available для поддержки всех версий iOS */
+            height: 100vh;
+            height: -webkit-fill-available;
             display: flex; 
             justify-content: center; 
             align-items: center; 
@@ -32,15 +37,18 @@
         }
         
         img { 
-            /* Занимаем 100% видимого пространства, включая зоны под челкой и полоской Home */
-            width: 100vw; 
-            height: 100dvh; 
+            /* Игнорируем safe-area и растягиваем в абсолют */
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; 
+            height: 100%;
             object-fit: cover; 
             display: block;
             transition: opacity 0.4s ease;
             opacity: 0;
         }
 
+        /* Остальные стили без изменений */
         .nav-zone { 
             position: absolute; top: 0; width: 45%; height: 100%; 
             z-index: 10; cursor: pointer; 
