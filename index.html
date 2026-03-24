@@ -12,39 +12,46 @@
     <link rel="apple-touch-icon" href="icon-512.png">
 
     <style>
-        /* Убираем все системные отступы и фиксируем высоту */
+        * { 
+            box-sizing: border-box; 
+            -webkit-tap-highlight-color: transparent; 
+        }
+
         html, body { 
             margin: 0; padding: 0; 
-            width: 100%; 
-            height: 100%; 
-            background: #ffffff; /* Белый фон, чтобы низ сливался с твоей плашкой */
-            overflow: hidden; 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
-        }
-        
-        #calendar-container { 
-            position: fixed; /* Фиксируем, чтобы избежать прыжков интерфейса */
-            top: 0; left: 0; right: 0; bottom: 0;
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
+            width: 100%; height: 100%;
+            /* Цвет фона как у твоей плашки — это скроет полосу */
+            background: #FAFAF8; 
             overflow: hidden;
         }
         
-        img { 
-            /* Занимаем 100% видимого пространства, включая зоны под челкой и полоской Home */
-            width: 100vw; 
+        #calendar-container { 
+            position: relative; 
+            width: 100%; 
             height: 100dvh; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            background: #FAFAF8;
+        }
+        
+        img { 
+            width: 100%; 
+            height: 100%;
             object-fit: cover; 
             display: block;
             transition: opacity 0.4s ease;
             opacity: 0;
+            pointer-events: none;
         }
 
         .nav-zone { 
-            position: absolute; top: 0; width: 45%; height: 100%; 
-            z-index: 10; cursor: pointer; 
-            -webkit-tap-highlight-color: transparent; 
+            position: absolute; 
+            top: 0; 
+            height: 100%; 
+            width: 45%; 
+            z-index: 20; 
+            cursor: pointer; 
         }
         .prev { left: 0; }
         .next { right: 0; }
@@ -52,7 +59,7 @@
         #menu-btn {
             position: absolute; 
             top: env(safe-area-inset-top, 25px); 
-            right: 20px; 
+            right: 25px; 
             z-index: 1000;
             width: 26px; height: 18px; 
             display: flex; flex-direction: column; justify-content: space-between;
@@ -61,33 +68,27 @@
             filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.4));
         }
         .burger-line {
-            width: 100%; height: 1.2px; 
-            background: rgba(255, 255, 255, 0.95); 
-            border-radius: 0.5px;
+            width: 100%; height: 1.5px; 
+            background: #fff; 
+            border-radius: 1px;
         }
 
         #month-menu {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.93); 
+            background: rgba(0, 0, 0, 0.95); 
             z-index: 2000;
             display: none; flex-direction: column; justify-content: center; align-items: center;
             backdrop-filter: blur(15px);
             -webkit-backdrop-filter: blur(15px);
         }
         .month-item { 
-            padding: 12px; font-size: 20px; color: #fff; 
+            padding: 15px; font-size: 22px; color: #fff; 
             cursor: pointer; width: 100%; text-align: center;
-            -webkit-tap-highlight-color: transparent;
             font-weight: 300;
-            letter-spacing: 1px;
         }
-        
         .close-menu { 
-            position: absolute; 
-            top: env(safe-area-inset-top, 20px); 
-            right: 25px; 
+            position: absolute; top: env(safe-area-inset-top, 20px); right: 25px; 
             font-size: 40px; color: #fff; cursor: pointer; 
-            font-weight: 200;
         }
     </style>
 </head>
@@ -129,7 +130,7 @@
         const menuBtn = document.getElementById('menu-btn');
 
         const monthPages = {
-            1: 2,   2: 34,  3: 63,  4: 95,  5: 126, 6: 158, 
+            1: 2, 2: 34, 3: 63, 4: 95, 5: 126, 6: 158, 
             7: 189, 8: 221, 9: 253, 10: 284, 11: 316, 12: 347
         };
 
@@ -143,14 +144,6 @@
 
         function toggleMenu(show) {
             document.getElementById('month-menu').style.display = show ? 'flex' : 'none';
-            if (show) preloadMonthStarts(); 
-        }
-
-        function preloadMonthStarts() {
-            Object.values(monthPages).forEach(page => {
-                const img = new Image();
-                img.src = `pages/${formatNumber(page)}.JPG`;
-            });
         }
 
         function goToMonth(monthIndex) {
@@ -169,10 +162,6 @@
             tempImg.onload = function() {
                 imgElement.src = tempImg.src;
                 imgElement.style.opacity = 1;
-                if (currentPage < totalFiles) {
-                    const next = new Image();
-                    next.src = `pages/${formatNumber(currentPage + 1)}.JPG`;
-                }
             };
             
             tempImg.onerror = function() {
