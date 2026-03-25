@@ -12,101 +12,67 @@
     <link rel="apple-touch-icon" href="icon-512.png">
 
     <style>
-        /* Базовые настройки для исключения отступов и лишних движений экрана */
-        * { 
-            box-sizing: border-box; 
-            -webkit-tap-highlight-color: transparent; 
-            margin: 0; padding: 0;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         html, body { 
             width: 100%; 
-            height: 100%;
-            background: #FAFAF8; /* Цвет фона плашки для бесшовности */
-            overflow: hidden;
-            position: fixed; /* Фиксация предотвращает "прыжки" интерфейса iOS */
-            left: 0; top: 0;
+            height: 100%; 
+            background: #000; /* Ставим черный фон для заставок, чтобы не было белой вспышки */
+            overflow: hidden; 
+            position: fixed; 
         }
         
         #calendar-container { 
-            position: absolute; 
-            top: 0; left: 0; 
+            position: fixed; /* Фиксируем на весь экран */
+            top: 0; left: 0; right: 0; bottom: 0;
             width: 100vw; 
-            height: 100dvh; /* Занимает всю динамическую высоту экрана */
+            height: 100vh; /* Старая добрая высота вьюпорта */
             display: flex; 
             justify-content: center; 
             align-items: center;
             overflow: hidden;
-            background: #FAFAF8;
+            background: #FAFAF8; /* Цвет для страниц с цитатами */
         }
         
         img { 
             position: absolute;
-            top: 0; left: 0;
-            width: 100%; 
-            height: 100%;
-            /* Растягивает фото 2340px так, чтобы оно закрыло все системные зоны */
+            /* Растягиваем на 100% высоты окна, игнорируя всё */
+            width: 100vw; 
+            height: 100vh; 
+            /* Если экран iPhone длиннее картинки, 'cover' дотянет края */
             object-fit: cover; 
-            object-position: center;
             display: block;
             transition: opacity 0.4s ease;
             opacity: 0;
-            pointer-events: none; /* Пропускает клики на навигационные зоны */
         }
 
-        /* Зоны клика для перелистывания */
-        .nav-zone { 
-            position: absolute; 
-            top: 0; 
-            height: 100%; 
-            width: 45%; 
-            z-index: 20; 
-            cursor: pointer; 
-        }
+        /* Навигация */
+        .nav-zone { position: absolute; top: 0; width: 45%; height: 100%; z-index: 20; cursor: pointer; -webkit-tap-highlight-color: transparent; }
         .prev { left: 0; }
         .next { right: 0; }
 
-        /* Кнопка меню (бургер) */
+        /* Меню (бургер) */
         #menu-btn {
             position: absolute; 
-            top: env(safe-area-inset-top, 25px); 
+            top: env(safe-area-inset-top, 30px); 
             right: 25px; 
             z-index: 1000;
             width: 26px; height: 18px; 
             display: flex; flex-direction: column; justify-content: space-between;
-            cursor: pointer; 
-            opacity: 0; 
-            transition: opacity 0.5s ease;
-            filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.4));
+            cursor: pointer; opacity: 0; transition: opacity 0.5s ease;
+            filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.5));
         }
-        .burger-line { 
-            width: 100%; 
-            height: 1.5px; 
-            background: #fff; 
-            border-radius: 1px; 
-        }
+        .burger-line { width: 100%; height: 1.5px; background: #fff; border-radius: 1px; }
 
-        /* Выпадающее меню выбора месяца */
+        /* Выпадающее меню */
         #month-menu {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.95); 
-            z-index: 2000;
-            display: none; flex-direction: column; justify-content: center; align-items: center;
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.96); 
+            z-index: 2000; display: none; flex-direction: column; justify-content: center; align-items: center;
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
         }
-        .month-item { 
-            padding: 15px; font-size: 22px; color: #fff; 
-            cursor: pointer; width: 100%; text-align: center;
-            font-weight: 300;
-            letter-spacing: 1px;
-        }
-        .close-menu { 
-            position: absolute; 
-            top: env(safe-area-inset-top, 20px); 
-            right: 25px; 
-            font-size: 40px; color: #fff; cursor: pointer; 
-        }
+        .month-item { padding: 15px; font-size: 22px; color: #fff; cursor: pointer; width: 100%; text-align: center; font-weight: 300; }
+        .close-menu { position: absolute; top: env(safe-area-inset-top, 20px); right: 25px; font-size: 40px; color: #fff; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -142,15 +108,11 @@
     <script>
         let currentPage;
         const totalFiles = 378;
-        const OFFSET = 4; // Смещение страниц относительно дня года
+        const OFFSET = 4;
         const imgElement = document.getElementById('main-img');
         const menuBtn = document.getElementById('menu-btn');
 
-        // Стартовые страницы для каждого месяца
-        const monthPages = {
-            1: 2, 2: 34, 3: 63, 4: 95, 5: 126, 6: 158, 
-            7: 189, 8: 221, 9: 253, 10: 284, 11: 316, 12: 347
-        };
+        const monthPages = { 1: 2, 2: 34, 3: 63, 4: 95, 5: 126, 6: 158, 7: 189, 8: 221, 9: 253, 10: 284, 11: 316, 12: 347 };
 
         function formatNumber(num) { return num.toString().padStart(3, '0'); }
 
@@ -160,9 +122,7 @@
             return Math.floor((now - start) / (1000 * 60 * 60 * 24));
         }
 
-        function toggleMenu(show) {
-            document.getElementById('month-menu').style.display = show ? 'flex' : 'none';
-        }
+        function toggleMenu(show) { document.getElementById('month-menu').style.display = show ? 'flex' : 'none'; }
 
         function goToMonth(monthIndex) {
             currentPage = monthPages[monthIndex];
@@ -173,23 +133,18 @@
         function updateImage(isSplash = false) {
             const fileName = formatNumber(currentPage);
             if (!isSplash) imgElement.style.opacity = 0;
-            
             const tempImg = new Image();
             tempImg.src = `pages/${fileName}.JPG`;
-            
             tempImg.onload = function() {
                 imgElement.src = tempImg.src;
                 imgElement.style.opacity = 1;
             };
-            
-            // Запасной вариант, если расширение .jpg строчными буквами
             tempImg.onerror = function() {
                 if (!this.src.includes('.jpg')) {
                     imgElement.src = `pages/${fileName}.jpg`;
                     imgElement.onload = () => imgElement.style.opacity = 1;
                 }
             };
-            
             localStorage.setItem('lastLinePage', currentPage);
             localStorage.setItem('lastUpdateDate', new Date().getDate());
         }
@@ -202,28 +157,19 @@
         }
 
         function runSplash() {
-            currentPage = 1; // Показываем обложку (001.JPG)
+            currentPage = 1; 
             updateImage(true);
-            
             setTimeout(() => {
                 const savedDate = localStorage.getItem('lastUpdateDate');
                 const todayDate = new Date().getDate();
                 const targetPage = getDayOfYear() + OFFSET;
-                
-                // Если зашли в новый день — принудительно на текущую дату
                 if (savedDate != todayDate) {
                     imgElement.style.opacity = 0;
-                    setTimeout(() => {
-                        currentPage = targetPage;
-                        updateImage();
-                        menuBtn.style.opacity = 1;
-                    }, 400);
+                    setTimeout(() => { currentPage = targetPage; updateImage(); menuBtn.style.opacity = 1; }, 400);
                 } else {
-                    // Иначе возвращаем страницу, на которой остановились
                     const savedPage = localStorage.getItem('lastLinePage');
                     currentPage = (savedPage && savedPage != 1) ? parseInt(savedPage) : targetPage;
-                    updateImage();
-                    menuBtn.style.opacity = 1;
+                    updateImage(); menuBtn.style.opacity = 1;
                 }
             }, 2200);
         }
