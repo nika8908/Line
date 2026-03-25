@@ -17,41 +17,43 @@
         html, body { 
             width: 100%; 
             height: 100%; 
-            background: #000; /* Ставим черный фон для заставок, чтобы не было белой вспышки */
+            /* Возвращаем твой светлый фон как основной */
+            background: #FAFAF8; 
             overflow: hidden; 
             position: fixed; 
         }
         
         #calendar-container { 
-            position: fixed; /* Фиксируем на весь экран */
+            position: fixed; 
             top: 0; left: 0; right: 0; bottom: 0;
             width: 100vw; 
-            height: 100vh; /* Старая добрая высота вьюпорта */
+            height: 100vh;
             display: flex; 
             justify-content: center; 
             align-items: center;
             overflow: hidden;
-            background: #FAFAF8; /* Цвет для страниц с цитатами */
+            background: #FAFAF8;
         }
         
         img { 
             position: absolute;
-            /* Растягиваем на 100% высоты окна, игнорируя всё */
-            width: 100vw; 
-            height: 100vh; 
-            /* Если экран iPhone длиннее картинки, 'cover' дотянет края */
+            /* ВНИМАНИЕ: Делаем картинку ВЫШЕ экрана на 5% */
+            top: 0;
+            width: 100%; 
+            height: 105vh; 
+            /* Прижимаем к верху, чтобы "лишнее" ушло вниз под полосу */
             object-fit: cover; 
+            object-position: center top;
             display: block;
             transition: opacity 0.4s ease;
             opacity: 0;
         }
 
-        /* Навигация */
+        /* Навигация и кнопки */
         .nav-zone { position: absolute; top: 0; width: 45%; height: 100%; z-index: 20; cursor: pointer; -webkit-tap-highlight-color: transparent; }
         .prev { left: 0; }
         .next { right: 0; }
 
-        /* Меню (бургер) */
         #menu-btn {
             position: absolute; 
             top: env(safe-area-inset-top, 30px); 
@@ -64,7 +66,6 @@
         }
         .burger-line { width: 100%; height: 1.5px; background: #fff; border-radius: 1px; }
 
-        /* Выпадающее меню */
         #month-menu {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.96); 
@@ -111,24 +112,16 @@
         const OFFSET = 4;
         const imgElement = document.getElementById('main-img');
         const menuBtn = document.getElementById('menu-btn');
-
         const monthPages = { 1: 2, 2: 34, 3: 63, 4: 95, 5: 126, 6: 158, 7: 189, 8: 221, 9: 253, 10: 284, 11: 316, 12: 347 };
 
         function formatNumber(num) { return num.toString().padStart(3, '0'); }
-
         function getDayOfYear() {
             const now = new Date();
             const start = new Date(now.getFullYear(), 0, 0);
             return Math.floor((now - start) / (1000 * 60 * 60 * 24));
         }
-
         function toggleMenu(show) { document.getElementById('month-menu').style.display = show ? 'flex' : 'none'; }
-
-        function goToMonth(monthIndex) {
-            currentPage = monthPages[monthIndex];
-            updateImage();
-            toggleMenu(false);
-        }
+        function goToMonth(monthIndex) { currentPage = monthPages[monthIndex]; updateImage(); toggleMenu(false); }
 
         function updateImage(isSplash = false) {
             const fileName = formatNumber(currentPage);
@@ -173,7 +166,6 @@
                 }
             }, 2200);
         }
-
         runSplash();
     </script>
 </body>
