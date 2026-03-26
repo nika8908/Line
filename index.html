@@ -13,21 +13,25 @@
 
         html, body { 
             width: 100%; 
-            /* Принудительно на всю высоту экрана */
+            /* Жестко задаем высоту на всё окно */
             height: 100vh !important;
-            height: -webkit-fill-available;
+            min-height: 100vh;
             background-color: #FAFAF8; 
             
-            /* Строго от верхнего края */
+            /* Позиционируем строго от верхнего левого угла */
             background-position: center top; 
-            /* Растягиваем ровно по границам экрана */
-            background-size: 100% 100%;
+            /* РАСТЯГИВАЕМ ровно по границам экрана, игнорируя пропорции */
+            background-size: 100% 100% !important;
             background-repeat: no-repeat;
             
             transition: background-image 0.4s ease-in-out, background-color 0.4s ease-in-out;
-            overflow: hidden; position: fixed; left: 0; top: 0;
+            overflow: hidden; 
+            position: fixed; 
+            left: 0; 
+            top: 0;
         }
 
+        /* Темный фон для заставок */
         body.dark-bg { background-color: #000000 !important; }
 
         #click-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; z-index: 10; }
@@ -98,7 +102,7 @@
             const fileName = formatNumber(currentPage);
             const imgPath = `pages/${fileName}.JPG`;
             
-            // Если страница в списке темных — красим фон в черный, иначе в белый
+            // Логика смены фона подложки
             if (splashPages.includes(currentPage)) {
                 document.body.classList.add('dark-bg');
             } else {
