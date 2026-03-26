@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 
 <title>ЛИНИЯ</title>
 <link rel="manifest" href="manifest.json">
@@ -28,21 +28,24 @@ html, body {
 /* Фон */
 #bg {
     position: fixed;
+
     top: 0;
     left: 0;
+    right: 0;
+    bottom: -10px; /* ключ — перекрываем нижнюю щель */
 
-    width: 100vw;
-    height: var(--app-height);
+    width: 100%;
+    height: 100%;
 
     object-fit: cover;
     object-position: center top;
 
     z-index: 0;
-    user-select: none;
-    -webkit-user-drag: none;
+
+    transform: scale(1.01); /* убирает микрополосы iOS */
 }
 
-/* зоны клика */
+/* клики */
 #click-container {
     position: fixed;
     inset: 0;
@@ -146,16 +149,6 @@ const OFFSET = 4;
 
 const bg = document.getElementById('bg');
 
-/* КЛЮЧ: реальная высота экрана */
-function setAppHeight() {
-    const h = window.innerHeight;
-    document.documentElement.style.setProperty('--app-height', h + 'px');
-}
-
-window.addEventListener('resize', setAppHeight);
-setAppHeight();
-
-/* загрузка картинки */
 function formatNumber(num) {
     return num.toString().padStart(3, '0');
 }
@@ -166,15 +159,16 @@ function updateImage() {
     const img2 = `pages/${fileName}.jpg`;
 
     const test = new Image();
+
     test.onload = () => bg.src = img1;
     test.onerror = () => bg.src = img2;
+
     test.src = img1;
 
     localStorage.setItem('lastLinePage', currentPage);
     localStorage.setItem('lastUpdateDate', new Date().getDate());
 }
 
-/* навигация */
 function changePage(step) {
     currentPage += step;
 
@@ -184,7 +178,6 @@ function changePage(step) {
     updateImage();
 }
 
-/* логика запуска */
 function runSplash() {
     currentPage = 1;
     updateImage();
@@ -211,7 +204,6 @@ function runSplash() {
     }, 2200);
 }
 
-/* меню */
 function toggleMenu(show) {
     document.getElementById('month-menu').style.display = show ? 'flex' : 'none';
 }
