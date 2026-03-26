@@ -11,43 +11,38 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
+        /* Базовый слой сайта всегда подстраивается под тип страницы */
         html, body { 
-            width: 100%; 
-            /* Жестко задаем высоту на всё окно */
-            height: 100vh !important;
-            min-height: 100vh;
-            background-color: #FAFAF8; 
-            
-            /* Позиционируем строго от верхнего левого угла */
-            background-position: center top; 
-            /* РАСТЯГИВАЕМ ровно по границам экрана, игнорируя пропорции */
+            width: 100%; height: 100%; 
+            overflow: hidden; position: fixed; 
+            background-color: #FAFAF8; /* По умолчанию светлый */
+        }
+        
+        body.dark-bg { background-color: #000000 !important; }
+
+        /* ГЛАВНОЕ: Отдельный слой для картинки, который мы растягиваем НАСИЛЬНО */
+        #bg-layer {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw;
+            height: 100vh;
+            /* Игнорируем все отступы и растягиваем на весь экран */
+            background-position: center center;
             background-size: 100% 100% !important;
             background-repeat: no-repeat;
-            
-            transition: background-image 0.4s ease-in-out, background-color 0.4s ease-in-out;
-            overflow: hidden; 
-            position: fixed; 
-            left: 0; 
-            top: 0;
+            z-index: 1;
+            transition: background-image 0.4s ease-in-out;
         }
-
-        /* Темный фон для заставок */
-        body.dark-bg { background-color: #000000 !important; }
 
         #click-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; z-index: 10; }
         .nav-zone { width: 50%; height: 100%; cursor: pointer; }
 
         #menu-btn {
-            position: fixed; 
-            top: env(safe-area-inset-top, 44px); 
-            right: 25px; 
-            z-index: 1000;
-            width: 26px; height: 18px; 
+            position: fixed; top: env(safe-area-inset-top, 44px); right: 25px;
+            z-index: 1000; width: 26px; height: 18px;
             display: flex; flex-direction: column; justify-content: space-between;
-            cursor: pointer;
-            filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.5));
-            opacity: 0;
-            transition: opacity 0.5s ease;
+            cursor: pointer; filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.5));
+            opacity: 0; transition: opacity 0.5s ease;
         }
         .burger-line { width: 100%; height: 1.5px; background: #fff; border-radius: 1px; }
 
@@ -62,6 +57,8 @@
     </style>
 </head>
 <body>
+
+    <div id="bg-layer"></div>
 
     <div id="menu-btn" onclick="toggleMenu(true)">
         <div class="burger-line"></div>
@@ -95,6 +92,7 @@
         const totalFiles = 378;
         const OFFSET = 4;
         const splashPages = [1, 2, 34, 63, 95, 126, 158, 189, 221, 253, 284, 316, 347];
+        const bgLayer = document.getElementById('bg-layer');
 
         function formatNumber(num) { return num.toString().padStart(3, '0'); }
 
@@ -102,7 +100,7 @@
             const fileName = formatNumber(currentPage);
             const imgPath = `pages/${fileName}.JPG`;
             
-            // Логика смены фона подложки
+            // Красим body, чтобы полоски (если они вдруг вылезут) были в тон
             if (splashPages.includes(currentPage)) {
                 document.body.classList.add('dark-bg');
             } else {
@@ -112,10 +110,11 @@
             const tempImg = new Image();
             tempImg.src = imgPath;
             tempImg.onload = () => {
-                document.body.style.backgroundImage = `url('${imgPath}')`;
+                // Картинка ставится на отдельный слой
+                bgLayer.style.backgroundImage = `url('${imgPath}')`;
             };
             tempImg.onerror = () => {
-                document.body.style.backgroundImage = `url('pages/${fileName}.jpg')`;
+                bgLayer.style.backgroundImage = `url('pages/${fileName}.jpg')`;
             };
             
             localStorage.setItem('lastLinePage', currentPage);
