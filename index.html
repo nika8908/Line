@@ -4,119 +4,45 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>ЛИНИЯ</title>
-    
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="ЛИНИЯ">
-    <link rel="apple-touch-icon" href="icon-512.png">
 
     <style>
-        /* Сброс всех системных отступов */
-        * { 
-            margin: 0; 
-            padding: 0; 
-            box-sizing: border-box; 
-            -webkit-tap-highlight-color: transparent;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
-        /* Настройка главного экрана */
         html, body { 
-            width: 100%; 
-            height: 100%;
-            /* Растягиваем рабочую область на весь экран iOS */
+            width: 100%; height: 100%; 
             height: -webkit-fill-available;
             background-color: #FAFAF8; 
-            
-            /* Настройки фонового изображения */
             background-position: center top; 
-            /* Растягиваем фон на 101%, чтобы принудительно закрыть нижнюю зону */
-            background-size: 100% 101%; 
+            background-size: cover;
             background-repeat: no-repeat;
-            
-            /* Плавный переход между страницами */
-            transition: background-image 0.4s ease-in-out;
-            
-            overflow: hidden;
-            position: fixed;
-            left: 0;
-            top: 0;
+            /* Плавная смена цвета фона, чтобы полоса не "прыгала" резко */
+            transition: background-image 0.4s ease, background-color 0.4s ease;
+            overflow: hidden; position: fixed; left: 0; top: 0;
         }
 
-        /* Слой для фиксации кликов */
-        #click-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            z-index: 10;
-        }
-        
-        .nav-zone {
-            width: 50%;
-            height: 100%;
-            cursor: pointer;
-        }
+        #click-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; z-index: 10; }
+        .nav-zone { width: 50%; height: 100%; cursor: pointer; }
 
-        /* Кнопка меню (бургер) */
         #menu-btn {
-            position: fixed; 
-            top: env(safe-area-inset-top, 30px); 
-            right: 25px; 
-            z-index: 1000;
-            width: 26px; 
-            height: 18px; 
-            display: flex; 
-            flex-direction: column; 
-            justify-content: space-between;
-            cursor: pointer;
-            filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.5));
-            opacity: 0;
-            transition: opacity 0.5s ease;
+            position: fixed; top: env(safe-area-inset-top, 30px); right: 25px;
+            z-index: 1000; width: 26px; height: 18px;
+            display: flex; flex-direction: column; justify-content: space-between;
+            cursor: pointer; filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.5));
+            opacity: 0; transition: opacity 0.5s ease;
         }
-        
-        .burger-line {
-            width: 100%; 
-            height: 1.5px; 
-            background: #fff; 
-            border-radius: 1px;
-        }
+        .burger-line { width: 100%; height: 1.5px; background: #fff; border-radius: 1px; }
 
-        /* Полноэкранное меню месяца */
         #month-menu {
-            position: fixed; 
-            top: 0; left: 0; 
-            width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.96); 
-            z-index: 2000;
-            display: none; 
-            flex-direction: column; 
-            justify-content: center; 
-            align-items: center;
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.96); z-index: 2000;
+            display: none; flex-direction: column; justify-content: center; align-items: center;
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
         }
-        
-        .month-item { 
-            padding: 15px; 
-            font-size: 22px; 
-            color: #fff; 
-            cursor: pointer; 
-            width: 100%; 
-            text-align: center;
-            font-weight: 300;
-        }
-        
-        .close-menu { 
-            position: absolute; 
-            top: env(safe-area-inset-top, 20px); 
-            right: 25px; 
-            font-size: 40px; 
-            color: #fff; 
-            cursor: pointer;
-        }
+        .month-item { padding: 15px; font-size: 22px; color: #fff; cursor: pointer; width: 100%; text-align: center; }
+        .close-menu { position: absolute; top: env(safe-area-inset-top, 20px); right: 25px; font-size: 40px; color: #fff; }
     </style>
 </head>
 <body>
@@ -154,44 +80,26 @@
         const OFFSET = 4;
         const menuBtn = document.getElementById('menu-btn');
         
-        const monthPages = {
-            1: 2, 2: 34, 3: 63, 4: 95, 5: 126, 6: 158, 
-            7: 189, 8: 221, 9: 253, 10: 284, 11: 316, 12: 347
-        };
+        // Номера страниц, которые являются ОБЛОЖКАМИ (черными)
+        const splashPages = [1, 2, 34, 63, 95, 126, 158, 189, 221, 253, 284, 316, 347];
 
         function formatNumber(num) { return num.toString().padStart(3, '0'); }
-
-        function getDayOfYear() {
-            const now = new Date();
-            const start = new Date(now.getFullYear(), 0, 0);
-            return Math.floor((now - start) / (1000 * 60 * 60 * 24));
-        }
-
-        function toggleMenu(show) {
-            document.getElementById('month-menu').style.display = show ? 'flex' : 'none';
-        }
-
-        function goToMonth(monthIndex) {
-            currentPage = monthPages[monthIndex];
-            updateImage();
-            toggleMenu(false);
-        }
 
         function updateImage() {
             const fileName = formatNumber(currentPage);
             const imgPath = `pages/${fileName}.JPG`;
             
+            // Если это обложка — фон черный. Если цитата — светлый #FAFAF8.
+            if (splashPages.includes(currentPage)) {
+                document.body.style.backgroundColor = "#000000";
+            } else {
+                document.body.style.backgroundColor = "#FAFAF8";
+            }
+
             const tempImg = new Image();
             tempImg.src = imgPath;
-            
-            tempImg.onload = () => {
-                document.body.style.backgroundImage = `url('${imgPath}')`;
-            };
-            
-            tempImg.onerror = () => {
-                const altPath = `pages/${fileName}.jpg`;
-                document.body.style.backgroundImage = `url('${altPath}')`;
-            };
+            tempImg.onload = () => { document.body.style.backgroundImage = `url('${imgPath}')`; };
+            tempImg.onerror = () => { document.body.style.backgroundImage = `url('pages/${fileName}.jpg')`; };
             
             localStorage.setItem('lastLinePage', currentPage);
             localStorage.setItem('lastUpdateDate', new Date().getDate());
@@ -205,24 +113,31 @@
         }
 
         function runSplash() {
-            const savedDate = localStorage.getItem('lastUpdateDate');
-            const todayDate = new Date().getDate();
-            const targetPage = getDayOfYear() + OFFSET;
-            const savedPage = localStorage.getItem('lastLinePage');
-
-            // Обложка при старте
             currentPage = 1;
             updateImage();
-
             setTimeout(() => {
-                if (savedDate != todayDate) {
-                    currentPage = targetPage;
-                } else {
-                    currentPage = (savedPage && savedPage != 1) ? parseInt(savedPage) : targetPage;
-                }
+                const savedDate = localStorage.getItem('lastUpdateDate');
+                const todayDate = new Date().getDate();
+                const now = new Date();
+                const start = new Date(now.getFullYear(), 0, 0);
+                const targetPage = Math.floor((now - start) / 86400000) + OFFSET;
+                const savedPage = localStorage.getItem('lastLinePage');
+                
+                if (savedDate != todayDate) { currentPage = targetPage; } 
+                else { currentPage = (savedPage && savedPage != 1) ? parseInt(savedPage) : targetPage; }
+                
                 updateImage();
                 menuBtn.style.opacity = 1;
             }, 2200);
+        }
+
+        function toggleMenu(show) { document.getElementById('month-menu').style.display = show ? 'flex' : 'none'; }
+        
+        function goToMonth(m) { 
+            const monthPages = {1:2, 2:34, 3:63, 4:95, 5:126, 6:158, 7:189, 8:221, 9:253, 10:284, 11:316, 12:347};
+            currentPage = monthPages[m]; 
+            updateImage(); 
+            toggleMenu(false); 
         }
 
         runSplash();
