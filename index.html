@@ -12,28 +12,38 @@
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         html, body { 
-            width: 100%; height: 100%; 
+            width: 100%; 
+            /* Принудительно на всю высоту экрана */
+            height: 100vh !important;
             height: -webkit-fill-available;
-            /* Изначально белый фон для цитат */
             background-color: #FAFAF8; 
+            
+            /* Строго от верхнего края */
             background-position: center top; 
-            /* Растягиваем на весь экран без рамок */
-            background-size: cover; 
+            /* Растягиваем ровно по границам экрана */
+            background-size: 100% 100%;
             background-repeat: no-repeat;
-            /* Плавное перетекание цвета и картинки */
+            
             transition: background-image 0.4s ease-in-out, background-color 0.4s ease-in-out;
             overflow: hidden; position: fixed; left: 0; top: 0;
         }
+
+        body.dark-bg { background-color: #000000 !important; }
 
         #click-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; z-index: 10; }
         .nav-zone { width: 50%; height: 100%; cursor: pointer; }
 
         #menu-btn {
-            position: fixed; top: env(safe-area-inset-top, 30px); right: 25px;
-            z-index: 1000; width: 26px; height: 18px;
+            position: fixed; 
+            top: env(safe-area-inset-top, 44px); 
+            right: 25px; 
+            z-index: 1000;
+            width: 26px; height: 18px; 
             display: flex; flex-direction: column; justify-content: space-between;
-            cursor: pointer; filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.5));
-            opacity: 0; transition: opacity 0.5s ease;
+            cursor: pointer;
+            filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.5));
+            opacity: 0;
+            transition: opacity 0.5s ease;
         }
         .burger-line { width: 100%; height: 1.5px; background: #fff; border-radius: 1px; }
 
@@ -43,7 +53,7 @@
             display: none; flex-direction: column; justify-content: center; align-items: center;
             backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
         }
-        .month-item { padding: 15px; font-size: 22px; color: #fff; cursor: pointer; width: 100%; text-align: center; font-weight: 300; }
+        .month-item { padding: 15px; font-size: 22px; color: #fff; cursor: pointer; width: 100%; text-align: center; }
         .close-menu { position: absolute; top: env(safe-area-inset-top, 20px); right: 25px; font-size: 40px; color: #fff; }
     </style>
 </head>
@@ -80,9 +90,7 @@
         let currentPage;
         const totalFiles = 378;
         const OFFSET = 4;
-        const menuBtn = document.getElementById('menu-btn');
-        // Список страниц, где нам нужен черный фон внизу (заставки)
-        const darkPages = [1, 2, 34, 63, 95, 126, 158, 189, 221, 253, 284, 316, 347];
+        const splashPages = [1, 2, 34, 63, 95, 126, 158, 189, 221, 253, 284, 316, 347];
 
         function formatNumber(num) { return num.toString().padStart(3, '0'); }
 
@@ -91,10 +99,10 @@
             const imgPath = `pages/${fileName}.JPG`;
             
             // Если страница в списке темных — красим фон в черный, иначе в белый
-            if (darkPages.includes(currentPage)) {
-                document.body.style.backgroundColor = "#000000";
+            if (splashPages.includes(currentPage)) {
+                document.body.classList.add('dark-bg');
             } else {
-                document.body.style.backgroundColor = "#FAFAF8";
+                document.body.classList.remove('dark-bg');
             }
 
             const tempImg = new Image();
@@ -132,16 +140,14 @@
                 else { currentPage = (savedPage && savedPage != 1) ? parseInt(savedPage) : targetPage; }
                 
                 updateImage();
-                menuBtn.style.opacity = 1;
+                document.getElementById('menu-btn').style.opacity = 1;
             }, 2200);
         }
 
         function toggleMenu(show) { document.getElementById('month-menu').style.display = show ? 'flex' : 'none'; }
         function goToMonth(m) { 
             const monthPages = {1:2, 2:34, 3:63, 4:95, 5:126, 6:158, 7:189, 8:221, 9:253, 10:284, 11:316, 12:347};
-            currentPage = monthPages[m]; 
-            updateImage(); 
-            toggleMenu(false); 
+            currentPage = monthPages[m]; updateImage(); toggleMenu(false); 
         }
 
         runSplash();
