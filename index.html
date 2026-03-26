@@ -6,7 +6,7 @@
     <title>ЛИНИЯ</title>
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
 
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -14,15 +14,18 @@
         html, body { 
             width: 100%; height: 100%; 
             height: -webkit-fill-available;
-            /* Фиксируем черный фон, чтобы ничего не моргало */
-            background-color: #000000; 
-            background-position: center center; 
-            /* Картинка будет вписываться, оставляя полосы, если не влезает */
-            background-size: contain; 
+            /* Фиксируем светлый фон, чтобы не было вспышек */
+            background-color: #FAFAF8; 
+            background-position: center top; 
+            /* Используем cover, чтобы занять максимум места */
+            background-size: cover; 
             background-repeat: no-repeat;
-            transition: background-image 0.5s ease-in-out;
+            transition: background-image 0.4s ease-in-out;
             overflow: hidden; position: fixed; left: 0; top: 0;
         }
+
+        /* На заставках (черных) принудительно ставим черный фон подложки */
+        body.dark-bg { background-color: #000000 !important; }
 
         #click-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; z-index: 10; }
         .nav-zone { width: 50%; height: 100%; cursor: pointer; }
@@ -79,7 +82,7 @@
         let currentPage;
         const totalFiles = 378;
         const OFFSET = 4;
-        const menuBtn = document.getElementById('menu-btn');
+        const splashPages = [1, 2, 34, 63, 95, 126, 158, 189, 221, 253, 284, 316, 347];
 
         function formatNumber(num) { return num.toString().padStart(3, '0'); }
 
@@ -87,6 +90,13 @@
             const fileName = formatNumber(currentPage);
             const imgPath = `pages/${fileName}.JPG`;
             
+            // Если это обложка — добавляем класс для черного фона
+            if (splashPages.includes(currentPage)) {
+                document.body.classList.add('dark-bg');
+            } else {
+                document.body.classList.remove('dark-bg');
+            }
+
             const tempImg = new Image();
             tempImg.src = imgPath;
             tempImg.onload = () => {
@@ -122,16 +132,14 @@
                 else { currentPage = (savedPage && savedPage != 1) ? parseInt(savedPage) : targetPage; }
                 
                 updateImage();
-                menuBtn.style.opacity = 1;
+                document.getElementById('menu-btn').style.opacity = 1;
             }, 2200);
         }
 
         function toggleMenu(show) { document.getElementById('month-menu').style.display = show ? 'flex' : 'none'; }
         function goToMonth(m) { 
             const monthPages = {1:2, 2:34, 3:63, 4:95, 5:126, 6:158, 7:189, 8:221, 9:253, 10:284, 11:316, 12:347};
-            currentPage = monthPages[m]; 
-            updateImage(); 
-            toggleMenu(false); 
+            currentPage = monthPages[m]; updateImage(); toggleMenu(false); 
         }
 
         runSplash();
