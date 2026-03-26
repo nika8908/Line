@@ -14,12 +14,13 @@
         html, body { 
             width: 100%; height: 100%; 
             height: -webkit-fill-available;
-            background-color: #FAFAF8; 
-            background-position: center top; 
-            background-size: cover;
+            /* Фиксируем черный фон, чтобы ничего не моргало */
+            background-color: #000000; 
+            background-position: center center; 
+            /* Картинка будет вписываться, оставляя полосы, если не влезает */
+            background-size: contain; 
             background-repeat: no-repeat;
-            /* Плавная смена цвета фона, чтобы полоса не "прыгала" резко */
-            transition: background-image 0.4s ease, background-color 0.4s ease;
+            transition: background-image 0.5s ease-in-out;
             overflow: hidden; position: fixed; left: 0; top: 0;
         }
 
@@ -37,9 +38,9 @@
 
         #month-menu {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.96); z-index: 2000;
+            background: rgba(0, 0, 0, 0.98); z-index: 2000;
             display: none; flex-direction: column; justify-content: center; align-items: center;
-            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
         }
         .month-item { padding: 15px; font-size: 22px; color: #fff; cursor: pointer; width: 100%; text-align: center; }
         .close-menu { position: absolute; top: env(safe-area-inset-top, 20px); right: 25px; font-size: 40px; color: #fff; }
@@ -79,9 +80,6 @@
         const totalFiles = 378;
         const OFFSET = 4;
         const menuBtn = document.getElementById('menu-btn');
-        
-        // Номера страниц, которые являются ОБЛОЖКАМИ (черными)
-        const splashPages = [1, 2, 34, 63, 95, 126, 158, 189, 221, 253, 284, 316, 347];
 
         function formatNumber(num) { return num.toString().padStart(3, '0'); }
 
@@ -89,17 +87,14 @@
             const fileName = formatNumber(currentPage);
             const imgPath = `pages/${fileName}.JPG`;
             
-            // Если это обложка — фон черный. Если цитата — светлый #FAFAF8.
-            if (splashPages.includes(currentPage)) {
-                document.body.style.backgroundColor = "#000000";
-            } else {
-                document.body.style.backgroundColor = "#FAFAF8";
-            }
-
             const tempImg = new Image();
             tempImg.src = imgPath;
-            tempImg.onload = () => { document.body.style.backgroundImage = `url('${imgPath}')`; };
-            tempImg.onerror = () => { document.body.style.backgroundImage = `url('pages/${fileName}.jpg')`; };
+            tempImg.onload = () => {
+                document.body.style.backgroundImage = `url('${imgPath}')`;
+            };
+            tempImg.onerror = () => {
+                document.body.style.backgroundImage = `url('pages/${fileName}.jpg')`;
+            };
             
             localStorage.setItem('lastLinePage', currentPage);
             localStorage.setItem('lastUpdateDate', new Date().getDate());
@@ -132,7 +127,6 @@
         }
 
         function toggleMenu(show) { document.getElementById('month-menu').style.display = show ? 'flex' : 'none'; }
-        
         function goToMonth(m) { 
             const monthPages = {1:2, 2:34, 3:63, 4:95, 5:126, 6:158, 7:189, 8:221, 9:253, 10:284, 11:316, 12:347};
             currentPage = monthPages[m]; 
