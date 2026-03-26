@@ -12,68 +12,109 @@
     <link rel="apple-touch-icon" href="icon-512.png">
 
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        /* Сброс всех отступов */
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+            -webkit-tap-highlight-color: transparent;
+        }
 
+        /* Главный секрет: картинка управляется через body */
         html, body { 
             width: 100%; 
-            height: 100%; 
-            /* Возвращаем твой светлый фон как основной */
-            background: #FAFAF8; 
-            overflow: hidden; 
-            position: fixed; 
-        }
-        
-        #calendar-container { 
-            position: fixed; 
-            top: 0; left: 0; right: 0; bottom: 0;
-            width: 100vw; 
-            height: 100vh;
-            display: flex; 
-            justify-content: center; 
-            align-items: center;
+            height: 100%;
+            height: -webkit-fill-available; /* Хак для заполнения всего экрана в iOS */
+            background-color: #FAFAF8; /* Цвет для светлых страниц */
+            
+            /* Настройки отображения фона */
+            background-position: center bottom; /* Прижимаем к низу, чтобы перекрыть полосу */
+            background-size: cover;
+            background-repeat: no-repeat;
+            
+            /* Плавная смена страниц */
+            transition: background-image 0.4s ease-in-out;
+            
             overflow: hidden;
-            background: #FAFAF8;
+            position: fixed;
+            left: 0;
+            top: 0;
+        }
+
+        /* Контейнер для кликов (невидимый слой поверх фона) */
+        #click-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            z-index: 10;
         }
         
-        img { 
-            position: absolute;
-            /* ВНИМАНИЕ: Делаем картинку ВЫШЕ экрана на 5% */
-            top: 0;
-            width: 100%; 
-            height: 105vh; 
-            /* Прижимаем к верху, чтобы "лишнее" ушло вниз под полосу */
-            object-fit: cover; 
-            object-position: center top;
-            display: block;
-            transition: opacity 0.4s ease;
-            opacity: 0;
+        .nav-zone {
+            width: 50%;
+            height: 100%;
+            cursor: pointer;
         }
 
-        /* Навигация и кнопки */
-        .nav-zone { position: absolute; top: 0; width: 45%; height: 100%; z-index: 20; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-        .prev { left: 0; }
-        .next { right: 0; }
-
+        /* Кнопка меню (бургер) */
         #menu-btn {
-            position: absolute; 
+            position: fixed; 
             top: env(safe-area-inset-top, 30px); 
             right: 25px; 
             z-index: 1000;
-            width: 26px; height: 18px; 
-            display: flex; flex-direction: column; justify-content: space-between;
-            cursor: pointer; opacity: 0; transition: opacity 0.5s ease;
+            width: 26px; 
+            height: 18px; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: space-between;
+            cursor: pointer;
             filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.5));
+            opacity: 0;
+            transition: opacity 0.5s ease;
         }
-        .burger-line { width: 100%; height: 1.5px; background: #fff; border-radius: 1px; }
+        
+        .burger-line {
+            width: 100%; 
+            height: 1.5px; 
+            background: #fff; 
+            border-radius: 1px;
+        }
 
+        /* Меню выбора месяца */
         #month-menu {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            position: fixed; 
+            top: 0; left: 0; 
+            width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.96); 
-            z-index: 2000; display: none; flex-direction: column; justify-content: center; align-items: center;
-            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            z-index: 2000;
+            display: none; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center;
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
         }
-        .month-item { padding: 15px; font-size: 22px; color: #fff; cursor: pointer; width: 100%; text-align: center; font-weight: 300; }
-        .close-menu { position: absolute; top: env(safe-area-inset-top, 20px); right: 25px; font-size: 40px; color: #fff; cursor: pointer; }
+        
+        .month-item { 
+            padding: 15px; 
+            font-size: 22px; 
+            color: #fff; 
+            cursor: pointer; 
+            width: 100%; 
+            text-align: center;
+            font-weight: 300;
+        }
+        
+        .close-menu { 
+            position: absolute; 
+            top: env(safe-area-inset-top, 20px); 
+            right: 25px; 
+            font-size: 40px; 
+            color: #fff; 
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -100,44 +141,59 @@
         <div class="month-item" onclick="goToMonth(12)">Декабрь</div>
     </div>
 
-    <div id="calendar-container">
-        <div class="nav-zone prev" onclick="changePage(-1)"></div>
-        <img id="main-img" src="" alt="">
-        <div class="nav-zone next" onclick="changePage(1)"></div>
+    <div id="click-container">
+        <div class="nav-zone" onclick="changePage(-1)"></div>
+        <div class="nav-zone" onclick="changePage(1)"></div>
     </div>
 
     <script>
         let currentPage;
         const totalFiles = 378;
         const OFFSET = 4;
-        const imgElement = document.getElementById('main-img');
         const menuBtn = document.getElementById('menu-btn');
-        const monthPages = { 1: 2, 2: 34, 3: 63, 4: 95, 5: 126, 6: 158, 7: 189, 8: 221, 9: 253, 10: 284, 11: 316, 12: 347 };
+        
+        const monthPages = {
+            1: 2, 2: 34, 3: 63, 4: 95, 5: 126, 6: 158, 
+            7: 189, 8: 221, 9: 253, 10: 284, 11: 316, 12: 347
+        };
 
         function formatNumber(num) { return num.toString().padStart(3, '0'); }
+
         function getDayOfYear() {
             const now = new Date();
             const start = new Date(now.getFullYear(), 0, 0);
             return Math.floor((now - start) / (1000 * 60 * 60 * 24));
         }
-        function toggleMenu(show) { document.getElementById('month-menu').style.display = show ? 'flex' : 'none'; }
-        function goToMonth(monthIndex) { currentPage = monthPages[monthIndex]; updateImage(); toggleMenu(false); }
 
-        function updateImage(isSplash = false) {
+        function toggleMenu(show) {
+            document.getElementById('month-menu').style.display = show ? 'flex' : 'none';
+        }
+
+        function goToMonth(monthIndex) {
+            currentPage = monthPages[monthIndex];
+            updateImage();
+            toggleMenu(false);
+        }
+
+        // Новая функция обновления через фоновое изображение
+        function updateImage() {
             const fileName = formatNumber(currentPage);
-            if (!isSplash) imgElement.style.opacity = 0;
+            const imgPath = `pages/${fileName}.JPG`;
+            
+            // Предзагрузка в памяти, чтобы избежать мерцания
             const tempImg = new Image();
-            tempImg.src = `pages/${fileName}.JPG`;
-            tempImg.onload = function() {
-                imgElement.src = tempImg.src;
-                imgElement.style.opacity = 1;
+            tempImg.src = imgPath;
+            
+            tempImg.onload = () => {
+                document.body.style.backgroundImage = `url('${imgPath}')`;
             };
-            tempImg.onerror = function() {
-                if (!this.src.includes('.jpg')) {
-                    imgElement.src = `pages/${fileName}.jpg`;
-                    imgElement.onload = () => imgElement.style.opacity = 1;
-                }
+            
+            // Проверка на маленькие буквы .jpg, если .JPG не сработал
+            tempImg.onerror = () => {
+                const altPath = `pages/${fileName}.jpg`;
+                document.body.style.backgroundImage = `url('${altPath}')`;
             };
+            
             localStorage.setItem('lastLinePage', currentPage);
             localStorage.setItem('lastUpdateDate', new Date().getDate());
         }
@@ -150,22 +206,27 @@
         }
 
         function runSplash() {
-            currentPage = 1; 
-            updateImage(true);
+            const savedDate = localStorage.getItem('lastUpdateDate');
+            const todayDate = new Date().getDate();
+            const targetPage = getDayOfYear() + OFFSET;
+            const savedPage = localStorage.getItem('lastLinePage');
+
+            // Показываем обложку
+            currentPage = 1;
+            updateImage();
+
+            // Через 2.2 секунды переходим на нужную страницу
             setTimeout(() => {
-                const savedDate = localStorage.getItem('lastUpdateDate');
-                const todayDate = new Date().getDate();
-                const targetPage = getDayOfYear() + OFFSET;
                 if (savedDate != todayDate) {
-                    imgElement.style.opacity = 0;
-                    setTimeout(() => { currentPage = targetPage; updateImage(); menuBtn.style.opacity = 1; }, 400);
+                    currentPage = targetPage;
                 } else {
-                    const savedPage = localStorage.getItem('lastLinePage');
                     currentPage = (savedPage && savedPage != 1) ? parseInt(savedPage) : targetPage;
-                    updateImage(); menuBtn.style.opacity = 1;
                 }
+                updateImage();
+                menuBtn.style.opacity = 1;
             }, 2200);
         }
+
         runSplash();
     </script>
 </body>
