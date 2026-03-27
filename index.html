@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 
 <title>ЛИНИЯ</title>
-<link rel="manifest" href="manifest.json">
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -18,47 +17,42 @@
 }
 
 html, body {
+    height: 100%;
+    overflow: hidden;
     background: #000;
-    overflow: hidden;
 }
 
-/* контейнер */
-#app {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: var(--vh);
-    overflow: hidden;
-}
-
-/* фон */
+/* 🔥 ФОН С ПЕРЕЛИВОМ */
 #bg {
-    position: absolute;
-    inset: 0;
+    position: fixed;
+
+    top: -10vh;
+    left: -10vw;
+    right: -10vw;
+    bottom: -10vh;
 
     background-size: cover;
     background-position: center top;
     background-repeat: no-repeat;
 
-    transform: scale(1.02);
+    z-index: 0;
 }
 
-/* клики */
+/* кликабельные зоны */
 #click-container {
-    position: absolute;
+    position: fixed;
     inset: 0;
     display: flex;
-    z-index: 5;
+    z-index: 10;
 }
 
 .nav-zone {
     width: 50%;
 }
 
-/* меню */
+/* бургер */
 #menu-btn {
-    position: absolute;
+    position: fixed;
     top: calc(env(safe-area-inset-top) + 18px);
     right: 25px;
 
@@ -80,9 +74,9 @@ html, body {
     background: #fff;
 }
 
-/* меню экран */
+/* меню */
 #month-menu {
-    position: absolute;
+    position: fixed;
     inset: 0;
     background: rgba(0,0,0,0.98);
 
@@ -112,58 +106,38 @@ html, body {
 
 <body>
 
-<div id="app">
-    <div id="bg"></div>
+<div id="bg"></div>
 
-    <div id="menu-btn" onclick="toggleMenu(true)">
-        <div class="burger-line"></div>
-        <div class="burger-line"></div>
-        <div class="burger-line"></div>
-    </div>
+<div id="menu-btn" onclick="toggleMenu(true)">
+    <div class="burger-line"></div>
+    <div class="burger-line"></div>
+    <div class="burger-line"></div>
+</div>
 
-    <div id="month-menu">
-        <div class="close-menu" onclick="toggleMenu(false)">×</div>
-        <div class="month-item" onclick="goToMonth(1)">Январь</div>
-        <div class="month-item" onclick="goToMonth(2)">Февраль</div>
-        <div class="month-item" onclick="goToMonth(3)">Март</div>
-        <div class="month-item" onclick="goToMonth(4)">Апрель</div>
-        <div class="month-item" onclick="goToMonth(5)">Май</div>
-        <div class="month-item" onclick="goToMonth(6)">Июнь</div>
-        <div class="month-item" onclick="goToMonth(7)">Июль</div>
-        <div class="month-item" onclick="goToMonth(8)">Август</div>
-        <div class="month-item" onclick="goToMonth(9)">Сентябрь</div>
-        <div class="month-item" onclick="goToMonth(10)">Октябрь</div>
-        <div class="month-item" onclick="goToMonth(11)">Ноябрь</div>
-        <div class="month-item" onclick="goToMonth(12)">Декабрь</div>
-    </div>
+<div id="month-menu">
+    <div class="close-menu" onclick="toggleMenu(false)">×</div>
+    <div class="month-item" onclick="goToMonth(1)">Январь</div>
+    <div class="month-item" onclick="goToMonth(2)">Февраль</div>
+    <div class="month-item" onclick="goToMonth(3)">Март</div>
+    <div class="month-item" onclick="goToMonth(4)">Апрель</div>
+    <div class="month-item" onclick="goToMonth(5)">Май</div>
+    <div class="month-item" onclick="goToMonth(6)">Июнь</div>
+    <div class="month-item" onclick="goToMonth(7)">Июль</div>
+    <div class="month-item" onclick="goToMonth(8)">Август</div>
+    <div class="month-item" onclick="goToMonth(9)">Сентябрь</div>
+    <div class="month-item" onclick="goToMonth(10)">Октябрь</div>
+    <div class="month-item" onclick="goToMonth(11)">Ноябрь</div>
+    <div class="month-item" onclick="goToMonth(12)">Декабрь</div>
+</div>
 
-    <div id="click-container">
-        <div class="nav-zone" onclick="changePage(-1)"></div>
-        <div class="nav-zone" onclick="changePage(1)"></div>
-    </div>
+<div id="click-container">
+    <div class="nav-zone" onclick="changePage(-1)"></div>
+    <div class="nav-zone" onclick="changePage(1)"></div>
 </div>
 
 <script>
 const bg = document.getElementById('bg');
 
-/* 🔥 ключ — уменьшаем высоту */
-function setVH() {
-    let h = window.visualViewport
-        ? window.visualViewport.height
-        : window.innerHeight;
-
-    /* компенсация бага iOS */
-    h = h - 6; 
-
-    document.documentElement.style.setProperty('--vh', h + 'px');
-}
-
-window.addEventListener('resize', setVH);
-window.visualViewport && window.visualViewport.addEventListener('resize', setVH);
-
-setVH();
-
-/* логика */
 let currentPage;
 const totalFiles = 378;
 const OFFSET = 4;
