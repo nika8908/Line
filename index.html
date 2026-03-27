@@ -22,10 +22,12 @@ html, body {
     overflow: hidden;
 }
 
-/* контейнер с реальной высотой */
+/* контейнер */
 #app {
     position: fixed;
-    inset: 0;
+    top: 0;
+    left: 0;
+    width: 100%;
     height: var(--vh);
     overflow: hidden;
 }
@@ -39,8 +41,7 @@ html, body {
     background-position: center top;
     background-repeat: no-repeat;
 
-    /* страховка от щелей */
-    transform: scale(1.015);
+    transform: scale(1.02);
 }
 
 /* клики */
@@ -48,6 +49,7 @@ html, body {
     position: absolute;
     inset: 0;
     display: flex;
+    z-index: 5;
 }
 
 .nav-zone {
@@ -59,7 +61,8 @@ html, body {
     position: absolute;
     top: calc(env(safe-area-inset-top) + 18px);
     right: 25px;
-    z-index: 10;
+
+    z-index: 1000;
 
     width: 26px;
     height: 18px;
@@ -76,6 +79,34 @@ html, body {
     height: 1.5px;
     background: #fff;
 }
+
+/* меню экран */
+#month-menu {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.98);
+
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+
+    z-index: 2000;
+}
+
+.month-item {
+    padding: 15px;
+    font-size: 22px;
+    color: #fff;
+}
+
+.close-menu {
+    position: absolute;
+    top: calc(env(safe-area-inset-top) + 10px);
+    right: 25px;
+    font-size: 40px;
+    color: #fff;
+}
 </style>
 </head>
 
@@ -90,6 +121,22 @@ html, body {
         <div class="burger-line"></div>
     </div>
 
+    <div id="month-menu">
+        <div class="close-menu" onclick="toggleMenu(false)">×</div>
+        <div class="month-item" onclick="goToMonth(1)">Январь</div>
+        <div class="month-item" onclick="goToMonth(2)">Февраль</div>
+        <div class="month-item" onclick="goToMonth(3)">Март</div>
+        <div class="month-item" onclick="goToMonth(4)">Апрель</div>
+        <div class="month-item" onclick="goToMonth(5)">Май</div>
+        <div class="month-item" onclick="goToMonth(6)">Июнь</div>
+        <div class="month-item" onclick="goToMonth(7)">Июль</div>
+        <div class="month-item" onclick="goToMonth(8)">Август</div>
+        <div class="month-item" onclick="goToMonth(9)">Сентябрь</div>
+        <div class="month-item" onclick="goToMonth(10)">Октябрь</div>
+        <div class="month-item" onclick="goToMonth(11)">Ноябрь</div>
+        <div class="month-item" onclick="goToMonth(12)">Декабрь</div>
+    </div>
+
     <div id="click-container">
         <div class="nav-zone" onclick="changePage(-1)"></div>
         <div class="nav-zone" onclick="changePage(1)"></div>
@@ -99,10 +146,14 @@ html, body {
 <script>
 const bg = document.getElementById('bg');
 
+/* 🔥 ключ — уменьшаем высоту */
 function setVH() {
-    const h = window.visualViewport
+    let h = window.visualViewport
         ? window.visualViewport.height
         : window.innerHeight;
+
+    /* компенсация бага iOS */
+    h = h - 6; 
 
     document.documentElement.style.setProperty('--vh', h + 'px');
 }
@@ -112,7 +163,7 @@ window.visualViewport && window.visualViewport.addEventListener('resize', setVH)
 
 setVH();
 
-/* дальше твоя логика без изменений */
+/* логика */
 let currentPage;
 const totalFiles = 378;
 const OFFSET = 4;
@@ -159,7 +210,20 @@ function runSplash() {
     }, 2200);
 }
 
-function toggleMenu() {}
+function toggleMenu(show) {
+    document.getElementById('month-menu').style.display = show ? 'flex' : 'none';
+}
+
+function goToMonth(m) {
+    const monthPages = {
+        1:2, 2:34, 3:63, 4:95, 5:126, 6:158,
+        7:189, 8:221, 9:253, 10:284, 11:316, 12:347
+    };
+
+    currentPage = monthPages[m];
+    updateImage();
+    toggleMenu(false);
+}
 
 runSplash();
 </script>
