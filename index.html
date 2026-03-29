@@ -14,18 +14,28 @@
         html, body { 
             width: 100%; height: 100%; 
             background-color: #FAFAF8; 
-            overflow: hidden; position: fixed; 
+            overflow: hidden; position: fixed;
+            /* Убираем все возможные отступы самого тела сайта */
+            padding: 0; margin: 0;
         }
 
-        /* Тот самый "синий блок", но теперь с твоей картинкой */
-        #main-bg {
+        /* Тот самый блок из синего теста, но теперь внутри картинка */
+        #bg-container {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            background-position: center top;
-            background-size: 100% 100%; /* Растягиваем как синий фон */
-            background-repeat: no-repeat;
             z-index: 1;
-            transition: background-image 0.4s ease-in-out;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Прижимаем к верху */
+        }
+
+        #main-img {
+            width: 100%;
+            height: 100%;
+            /* object-fit: cover заставит картинку распереть контейнер полностью */
+            object-fit: cover; 
+            object-position: center top;
+            transition: opacity 0.4s ease-in-out;
         }
 
         body.dark-bg { background-color: #000000 !important; }
@@ -48,13 +58,15 @@
             display: none; flex-direction: column; justify-content: center; align-items: center;
             backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
         }
-        .month-item { padding: 15px; font-size: 22px; color: #fff; cursor: pointer; width: 100%; text-align: center; }
+        .month-item { padding: 15px; font-size: 22px; color: #fff; cursor: pointer; width: 100%; text-align: center; font-weight: 300; }
         .close-menu { position: absolute; top: env(safe-area-inset-top, 20px); right: 25px; font-size: 40px; color: #fff; }
     </style>
 </head>
 <body>
 
-    <div id="main-bg"></div>
+    <div id="bg-container">
+        <img id="main-img" src="" alt="">
+    </div>
 
     <div id="menu-btn" onclick="toggleMenu(true)">
         <div class="burger-line"></div>
@@ -88,7 +100,7 @@
         const totalFiles = 378;
         const OFFSET = 4;
         const splashPages = [1, 2, 34, 63, 95, 126, 158, 189, 221, 253, 284, 316, 347];
-        const mainBg = document.getElementById('main-bg');
+        const mainImg = document.getElementById('main-img');
 
         function formatNumber(num) { return num.toString().padStart(3, '0'); }
 
@@ -102,14 +114,13 @@
                 document.body.classList.remove('dark-bg');
             }
 
-            const tempImg = new Image();
-            tempImg.src = imgPath;
-            tempImg.onload = () => {
-                mainBg.style.backgroundImage = `url('${imgPath}')`;
-            };
-            tempImg.onerror = () => {
-                mainBg.style.backgroundImage = `url('pages/${fileName}.jpg')`;
-            };
+            // Плавная замена картинки
+            mainImg.style.opacity = 0;
+            setTimeout(() => {
+                mainImg.src = imgPath;
+                mainImg.onerror = () => { mainImg.src = `pages/${fileName}.jpg`; };
+                mainImg.style.opacity = 1;
+            }, 50);
             
             localStorage.setItem('lastLinePage', currentPage);
             localStorage.setItem('lastUpdateDate', new Date().getDate());
