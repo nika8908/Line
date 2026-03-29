@@ -9,60 +9,42 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
     <style>
-        /* Обнуляем всё лишнее */
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
-        /* Базовый слой приложения */
         html, body { 
-            width: 100%; 
-            height: 100%; 
-            overflow: hidden; 
-            position: fixed;
-            /* По умолчанию черный фон для бесшовности заставок */
-            background-color: #000000; 
-            transition: background-color 0.4s ease;
+            width: 100%; height: 100%; 
+            overflow: hidden; position: fixed;
+            background-color: #FAFAF8; /* Светлый фон по умолчанию */
+            transition: background-color 0.3s ease;
         }
 
-        /* Белый фон только для страниц с цитатами */
-        body:not(.dark-bg) { 
-            background-color: #FAFAF8; 
-        }
+        body.dark-bg { background-color: #000000; }
 
-        /* Контейнер для картинки (как наш синий тест) */
         #bg-wrapper {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
             z-index: 1;
             display: flex;
             justify-content: center;
-            align-items: center;
         }
 
         #main-img {
-            width: 100%; 
-            height: 100%;
-            object-fit: cover; /* Растягиваем на всё пространство */
+            width: 100%; height: 100%;
+            object-fit: cover;
             object-position: center top;
             display: block;
-            transition: opacity 0.4s ease-in-out;
-            
-            /* МАГИЯ: Плавно уводим низ картинки в прозрачность (в черный фон body) */
-            /* Это "стирает" границу системной полосы Safari */
-            -webkit-mask-image: linear-gradient(to bottom, black 94%, transparent 100%);
-            mask-image: linear-gradient(to bottom, black 94%, transparent 100%);
+            /* Постоянная маска для мягкого перехода. 
+               Цвет маски (черный или белый) будет зависеть от фона body */
+            -webkit-mask-image: linear-gradient(to bottom, black 85%, transparent 100%);
+            mask-image: linear-gradient(to bottom, black 85%, transparent 100%);
         }
 
-        /* Если это цитата, убираем маску (там внизу и так белый фон) */
-        body:not(.dark-bg) #main-img {
-            -webkit-mask-image: none;
-            mask-image: none;
-        }
+        /* Убираем мигание при переключении: картинка всегда видна */
+        .loading { opacity: 1; } 
 
-        /* Интерфейс: Зоны клика */
         #click-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; z-index: 10; }
         .nav-zone { width: 50%; height: 100%; cursor: pointer; }
 
-        /* Кнопка меню */
         #menu-btn {
             position: fixed; top: env(safe-area-inset-top, 44px); right: 25px;
             z-index: 1000; width: 26px; height: 18px;
@@ -72,7 +54,6 @@
         }
         .burger-line { width: 100%; height: 1.5px; background: #fff; border-radius: 1px; }
 
-        /* Выпадающее меню */
         #month-menu {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.98); z-index: 2000;
@@ -121,7 +102,6 @@
         const totalFiles = 378;
         const OFFSET = 4;
         const splashPages = [1, 2, 34, 63, 95, 126, 158, 189, 221, 253, 284, 316, 347];
-        
         const mainImg = document.getElementById('main-img');
 
         function formatNumber(num) { return num.toString().padStart(3, '0'); }
@@ -130,24 +110,21 @@
             const fileName = formatNumber(currentPage);
             const imgPath = `pages/${fileName}.JPG`;
             
-            // Определяем, заставка это или цитата
+            // Сначала готовим фон
             if (splashPages.includes(currentPage)) {
                 document.body.classList.add('dark-bg');
             } else {
                 document.body.classList.remove('dark-bg');
             }
 
-            // Плавная смена картинки
-            mainImg.style.opacity = '0.7'; 
+            // Грузим картинку в памяти, чтобы подменить мгновенно без "засвета"
             const tempImg = new Image();
             tempImg.src = imgPath;
             tempImg.onload = () => {
                 mainImg.src = imgPath;
-                mainImg.style.opacity = '1';
             };
             tempImg.onerror = () => {
                 mainImg.src = `pages/${fileName}.jpg`;
-                mainImg.style.opacity = '1';
             };
             
             localStorage.setItem('lastLinePage', currentPage);
@@ -157,6 +134,7 @@
         function changePage(step) {
             currentPage += step;
             if (currentPage < 1) currentPage = totalFiles;
+            if (currentPage > totalFiles) currentPage = totalFiles; // Заглушка для конца
             if (currentPage > totalFiles) currentPage = 1;
             updateImage();
         }
@@ -181,12 +159,9 @@
         }
 
         function toggleMenu(show) { document.getElementById('month-menu').style.display = show ? 'flex' : 'none'; }
-        
         function goToMonth(m) { 
             const monthPages = {1:2, 2:34, 3:63, 4:95, 5:126, 6:158, 7:189, 8:221, 9:253, 10:284, 11:316, 12:347};
-            currentPage = monthPages[m]; 
-            updateImage(); 
-            toggleMenu(false); 
+            currentPage = monthPages[m]; updateImage(); toggleMenu(false); 
         }
 
         runSplash();
