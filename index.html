@@ -18,7 +18,8 @@
             transition: background-color 0.3s ease;
         }
 
-        body.dark-bg { background-color: #000000; }
+        /* Темный фон только для заставок */
+        body.dark-bg { background-color: #000000 !important; }
 
         #bg-wrapper {
             position: fixed;
@@ -33,18 +34,19 @@
             object-fit: cover;
             object-position: center top;
             display: block;
-            /* Постоянная маска для мягкого перехода. 
-               Цвет маски (черный или белый) будет зависеть от фона body */
-            -webkit-mask-image: linear-gradient(to bottom, black 85%, transparent 100%);
-            mask-image: linear-gradient(to bottom, black 85%, transparent 100%);
         }
 
-        /* Убираем мигание при переключении: картинка всегда видна */
-        .loading { opacity: 1; } 
+        /* МАГИЯ: Маска ТОЛЬКО для заставок */
+        /* Мы накладываем её не через CSS маску, а через псевдоэлемент, это работает стабильнее */
+        body.dark-bg #bg-wrapper::after {
+            content: '';
+            position: absolute;
+            left: 0; bottom: 0; width: 100%; height: 25%; /* Высота градиента */
+            background: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.9) 80%, #000 100%);
+            z-index: 2;
+        }
 
-        #click-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; z-index: 10; }
-        .nav-zone { width: 50%; height: 100%; cursor: pointer; }
-
+        /* Кнопка бургер */
         #menu-btn {
             position: fixed; top: env(safe-area-inset-top, 44px); right: 25px;
             z-index: 1000; width: 26px; height: 18px;
@@ -54,20 +56,34 @@
         }
         .burger-line { width: 100%; height: 1.5px; background: #fff; border-radius: 1px; }
 
+        /* Зоны клика (теперь они поверх всего, кроме меню) */
+        #click-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; z-index: 50; }
+        .nav-zone { width: 50%; height: 100%; cursor: pointer; }
+
+        /* МЕНЮ МЕСЯЦЕВ: Теперь поверх страницы, как стекло */
         #month-menu {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.98); z-index: 2000;
-            display: none; flex-direction: column; justify-content: center; align-items: center;
-            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            position: fixed; 
+            top: 0; left: 0; right: 0; bottom: 0; /* Занимает всё окно PWA */
+            background: rgba(0, 0, 0, 0.95); /* Полупрозрачный черный */
+            z-index: 2000;
+            display: none; /* Скрыто по умолчанию */
+            flex-direction: column; justify-content: center; align-items: center;
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); /* Эффект стекла */
         }
-        .month-item { padding: 15px; font-size: 22px; color: #fff; cursor: pointer; width: 100%; text-align: center; }
-        .close-menu { position: absolute; top: env(safe-area-inset-top, 20px); right: 25px; font-size: 40px; color: #fff; }
+        
+        .month-item { padding: 12px; font-size: 20px; color: #fff; cursor: pointer; width: 100%; text-align: center; }
+        .close-menu { position: absolute; top: env(safe-area-inset-top, 20px); right: 25px; font-size: 40px; color: #fff; line-height: 1; }
     </style>
 </head>
 <body>
 
     <div id="bg-wrapper">
         <img id="main-img" src="" alt="">
+    </div>
+
+    <div id="click-container">
+        <div class="nav-zone" onclick="changePage(-1)"></div>
+        <div class="nav-zone" onclick="changePage(1)"></div>
     </div>
 
     <div id="menu-btn" onclick="toggleMenu(true)">
@@ -92,11 +108,6 @@
         <div class="month-item" onclick="goToMonth(12)">Декабрь</div>
     </div>
 
-    <div id="click-container">
-        <div class="nav-zone" onclick="changePage(-1)"></div>
-        <div class="nav-zone" onclick="changePage(1)"></div>
-    </div>
-
     <script>
         let currentPage;
         const totalFiles = 378;
@@ -110,22 +121,18 @@
             const fileName = formatNumber(currentPage);
             const imgPath = `pages/${fileName}.JPG`;
             
-            // Сначала готовим фон
+            // Смена фона и маски
             if (splashPages.includes(currentPage)) {
                 document.body.classList.add('dark-bg');
             } else {
                 document.body.classList.remove('dark-bg');
             }
 
-            // Грузим картинку в памяти, чтобы подменить мгновенно без "засвета"
+            // Мгновенная подмена картинки (без анимации)
             const tempImg = new Image();
             tempImg.src = imgPath;
-            tempImg.onload = () => {
-                mainImg.src = imgPath;
-            };
-            tempImg.onerror = () => {
-                mainImg.src = `pages/${fileName}.jpg`;
-            };
+            tempImg.onload = () => { mainImg.src = imgPath; };
+            tempImg.onerror = () => { mainImg.src = `pages/${fileName}.jpg`; };
             
             localStorage.setItem('lastLinePage', currentPage);
             localStorage.setItem('lastUpdateDate', new Date().getDate());
@@ -134,7 +141,6 @@
         function changePage(step) {
             currentPage += step;
             if (currentPage < 1) currentPage = totalFiles;
-            if (currentPage > totalFiles) currentPage = totalFiles; // Заглушка для конца
             if (currentPage > totalFiles) currentPage = 1;
             updateImage();
         }
@@ -158,10 +164,15 @@
             }, 2200);
         }
 
-        function toggleMenu(show) { document.getElementById('month-menu').style.display = show ? 'flex' : 'none'; }
+        function toggleMenu(show) { 
+            document.getElementById('month-menu').style.display = show ? 'flex' : 'none'; 
+        }
+        
         function goToMonth(m) { 
             const monthPages = {1:2, 2:34, 3:63, 4:95, 5:126, 6:158, 7:189, 8:221, 9:253, 10:284, 11:316, 12:347};
-            currentPage = monthPages[m]; updateImage(); toggleMenu(false); 
+            currentPage = monthPages[m]; 
+            updateImage(); 
+            toggleMenu(false); 
         }
 
         runSplash();
