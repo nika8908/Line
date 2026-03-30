@@ -11,42 +11,32 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
-        /* Возвращаем светлую базу, чтобы цитаты были чистыми */
         html, body { 
             width: 100%; height: 100%; 
             overflow: hidden; position: fixed;
-            background-color: #FAFAF8; 
+            background-color: #FAFAF8; /* Всегда светлый фон для стабильности */
         }
-
-        /* Только для заставок делаем фон темным */
-        body.dark-bg { background-color: #000; }
 
         #bg-wrapper {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             z-index: 1; display: flex; justify-content: center;
+            background-color: #000; /* Черная подложка только под оберткой */
         }
 
-        .img-layer {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            object-fit: cover; object-position: center top;
-            transition: opacity 0.8s ease-in-out;
+        #main-img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            object-position: center top;
+            display: block;
+            transition: opacity 0.4s ease-in-out; /* Быстрый и чистый переход */
         }
 
-        /* СУЖЕННЫЙ ГРАДИЕНТ: теперь он занимает только самый низ */
-        #gradient-overlay {
-            position: absolute; left: 0; bottom: 0; width: 100%; 
-            height: 18%; /* Уменьшили высоту */
-            background: linear-gradient(to bottom, 
-                rgba(0,0,0,0) 0%, 
-                rgba(0,0,0,0.4) 40%, 
-                rgba(0,0,0,0.8) 80%, 
-                #000 100%);
-            z-index: 10; opacity: 0; transition: opacity 0.6s ease-in-out;
-            pointer-events: none;
+        /* Стиль для заставок: короткая мягкая маска внизу */
+        .is-splash {
+            -webkit-mask-image: linear-gradient(to bottom, black 88%, transparent 100%);
+            mask-image: linear-gradient(to bottom, black 88%, transparent 100%);
         }
-        body.dark-bg #gradient-overlay { opacity: 1; }
 
-        /* Интерфейс */
         #menu-btn {
             position: fixed; top: env(safe-area-inset-top, 44px); right: 25px;
             z-index: 1000; width: 26px; height: 18px;
@@ -55,25 +45,27 @@
         }
         .burger-line { width: 100%; height: 1.5px; background: #fff; border-radius: 1px; }
 
-        #click-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; z-index: 50; }
-        .nav-zone { width: 50%; height: 100%; }
-
         #month-menu {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.98); z-index: 2000;
+            background: #000; z-index: 2000;
             display: none; flex-direction: column; justify-content: center; align-items: center;
-            backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
         }
+        /* Фикс белой полосы в меню */
+        #month-menu::after {
+            content: ""; position: absolute; bottom: -20vh; left: 0; width: 100%; height: 25vh; background: #000;
+        }
+        
         .month-item { padding: 12px; font-size: 20px; color: #fff; cursor: pointer; width: 100%; text-align: center; }
         .close-menu { position: absolute; top: env(safe-area-inset-top, 20px); right: 25px; font-size: 40px; color: #fff; }
+
+        #click-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; z-index: 50; }
+        .nav-zone { width: 50%; height: 100%; }
     </style>
 </head>
 <body>
 
     <div id="bg-wrapper">
-        <div id="gradient-overlay"></div>
-        <img id="img-active" class="img-layer" src="" style="opacity: 1; z-index: 5;">
-        <img id="img-next" class="img-layer" src="" style="opacity: 0; z-index: 4;">
+        <img id="main-img" src="" alt="">
     </div>
 
     <div id="click-container">
@@ -108,49 +100,36 @@
         const totalFiles = 378;
         const OFFSET = 4;
         const splashPages = [1, 2, 34, 63, 95, 126, 158, 189, 221, 253, 284, 316, 347];
-        
-        const imgActive = document.getElementById('img-active');
-        const imgNext = document.getElementById('img-next');
-        let isTransitioning = false;
+        const mainImg = document.getElementById('main-img');
 
         function formatNumber(num) { return num.toString().padStart(3, '0'); }
 
-        function updateImage(isFirstLoad = false) {
-            if (isTransitioning && !isFirstLoad) return;
-            isTransitioning = true;
-
+        function updateImage() {
             const fileName = formatNumber(currentPage);
             const imgPath = `pages/${fileName}.JPG`;
-            const isDark = splashPages.includes(currentPage);
+            
+            // 1. Сначала плавно скрываем текущую картинку
+            mainImg.style.opacity = '0.9'; 
 
-            imgNext.src = imgPath;
-            imgNext.onerror = () => { imgNext.src = `pages/${fileName}.jpg`; };
-
-            imgNext.onload = () => {
-                if (isFirstLoad) {
-                    imgActive.src = imgNext.src;
-                    document.body.className = isDark ? 'dark-bg' : '';
-                    isTransitioning = false;
-                    return;
+            const tempImg = new Image();
+            tempImg.src = imgPath;
+            tempImg.onload = () => {
+                // 2. Когда новая загружена, меняем маску (градиент)
+                if (splashPages.includes(currentPage)) {
+                    mainImg.classList.add('is-splash');
+                    document.getElementById('bg-wrapper').style.backgroundColor = '#000';
+                } else {
+                    mainImg.classList.remove('is-splash');
+                    document.getElementById('bg-wrapper').style.backgroundColor = '#FAFAF8';
                 }
-
-                // Плавное перетекание
-                imgNext.style.opacity = '1';
-                imgNext.style.zIndex = '6';
-                imgActive.style.opacity = '0';
                 
-                // Меняем фон с задержкой, чтобы не было вспышки
-                setTimeout(() => {
-                    document.body.className = isDark ? 'dark-bg' : '';
-                }, 400);
-
-                setTimeout(() => {
-                    imgActive.src = imgNext.src;
-                    imgActive.style.opacity = '1';
-                    imgNext.style.opacity = '0';
-                    imgNext.style.zIndex = '4';
-                    isTransitioning = false;
-                }, 850);
+                // 3. Подменяем источник и возвращаем видимость
+                mainImg.src = imgPath;
+                mainImg.style.opacity = '1';
+            };
+            tempImg.onerror = () => {
+                mainImg.src = `pages/${fileName}.jpg`;
+                mainImg.style.opacity = '1';
             };
 
             localStorage.setItem('lastLinePage', currentPage);
@@ -158,7 +137,6 @@
         }
 
         function changePage(step) {
-            if (isTransitioning) return;
             currentPage += step;
             if (currentPage < 1) currentPage = totalFiles;
             if (currentPage > totalFiles) currentPage = 1;
@@ -167,7 +145,7 @@
 
         function runSplash() {
             currentPage = 1;
-            updateImage(true);
+            updateImage();
             setTimeout(() => {
                 const now = new Date();
                 const start = new Date(now.getFullYear(), 0, 0);
