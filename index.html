@@ -11,16 +11,17 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
+        /* Устанавливаем единый цвет фона для всего, чтобы убрать видимое мигание */
         html, body { 
             width: 100%; height: 100%; 
             overflow: hidden; position: fixed;
-            background-color: #FAFAF8; /* Всегда светлый фон для стабильности */
+            background-color: #FAFAF8; 
         }
 
         #bg-wrapper {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             z-index: 1; display: flex; justify-content: center;
-            background-color: #000; /* Черная подложка только под оберткой */
+            background-color: #FAFAF8;
         }
 
         #main-img {
@@ -28,14 +29,18 @@
             object-fit: cover;
             object-position: center top;
             display: block;
-            transition: opacity 0.4s ease-in-out; /* Быстрый и чистый переход */
+            transition: opacity 0.3s ease-in-out;
         }
 
-        /* Стиль для заставок: короткая мягкая маска внизу */
-        .is-splash {
-            -webkit-mask-image: linear-gradient(to bottom, black 88%, transparent 100%);
-            mask-image: linear-gradient(to bottom, black 88%, transparent 100%);
+        /* ГРАДИЕНТ ПОВЕРХ: теперь он накладывается сверху, не обрезая картинку */
+        #gradient-overlay {
+            position: absolute; left: 0; bottom: 0; width: 100%; height: 15%; 
+            background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.7) 60%, #000 100%);
+            z-index: 10; opacity: 0; transition: opacity 0.4s ease-in-out;
+            pointer-events: none;
         }
+        body.dark-mode #gradient-overlay { opacity: 1; }
+        body.dark-mode #bg-wrapper { background-color: #000; }
 
         #menu-btn {
             position: fixed; top: env(safe-area-inset-top, 44px); right: 25px;
@@ -45,14 +50,14 @@
         }
         .burger-line { width: 100%; height: 1.5px; background: #fff; border-radius: 1px; }
 
+        /* МЕНЮ: полная блокировка белых полос */
         #month-menu {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             background: #000; z-index: 2000;
             display: none; flex-direction: column; justify-content: center; align-items: center;
         }
-        /* Фикс белой полосы в меню */
         #month-menu::after {
-            content: ""; position: absolute; bottom: -20vh; left: 0; width: 100%; height: 25vh; background: #000;
+            content: ""; position: absolute; bottom: -50vh; left: 0; width: 100%; height: 50vh; background: #000;
         }
         
         .month-item { padding: 12px; font-size: 20px; color: #fff; cursor: pointer; width: 100%; text-align: center; }
@@ -65,6 +70,7 @@
 <body>
 
     <div id="bg-wrapper">
+        <div id="gradient-overlay"></div>
         <img id="main-img" src="" alt="">
     </div>
 
@@ -107,25 +113,20 @@
         function updateImage() {
             const fileName = formatNumber(currentPage);
             const imgPath = `pages/${fileName}.JPG`;
+            const isSplash = splashPages.includes(currentPage);
             
-            // 1. Сначала плавно скрываем текущую картинку
-            mainImg.style.opacity = '0.9'; 
+            // Мгновенно меняем состояние темы, чтобы фон подстроился до смены картинки
+            if (isSplash) document.body.classList.add('dark-mode');
+            else document.body.classList.remove('dark-mode');
 
             const tempImg = new Image();
             tempImg.src = imgPath;
             tempImg.onload = () => {
-                // 2. Когда новая загружена, меняем маску (градиент)
-                if (splashPages.includes(currentPage)) {
-                    mainImg.classList.add('is-splash');
-                    document.getElementById('bg-wrapper').style.backgroundColor = '#000';
-                } else {
-                    mainImg.classList.remove('is-splash');
-                    document.getElementById('bg-wrapper').style.backgroundColor = '#FAFAF8';
-                }
-                
-                // 3. Подменяем источник и возвращаем видимость
-                mainImg.src = imgPath;
-                mainImg.style.opacity = '1';
+                mainImg.style.opacity = '0.3'; // Легкое затухание для плавности
+                setTimeout(() => {
+                    mainImg.src = imgPath;
+                    mainImg.style.opacity = '1';
+                }, 50);
             };
             tempImg.onerror = () => {
                 mainImg.src = `pages/${fileName}.jpg`;
