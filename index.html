@@ -12,7 +12,6 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
-        /* Фон меняется плавно, чтобы не было резкого скачка при переходе */
         html, body { 
             width: 100%; height: 100%; 
             overflow: hidden; position: fixed;
@@ -20,10 +19,7 @@
             transition: background-color 0.4s ease;
         }
 
-        /* Класс для заставок и меню */
-        html.dark-theme, html.dark-theme body { 
-            background-color: #000 !important; 
-        }
+        html.dark-theme, html.dark-theme body { background-color: #000 !important; }
 
         #bg-wrapper {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -33,12 +29,11 @@
         #main-img {
             width: 100%; height: 100%;
             object-fit: cover; object-position: center top;
-            display: block;
-            /* Ускоряем переход, чтобы глаз не успел заметить подложку */
-            transition: opacity 0.3s ease-in-out; 
+            /* Тот самый Opacity 0.2 для удержания слоя в памяти */
+            transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
+            will-change: opacity;
         }
 
-        /* Темная полоса с коротким градиентом только для заставок */
         #gradient-overlay {
             position: absolute; left: 0; bottom: 0; width: 100%; height: 100px; 
             background: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.8) 100%);
@@ -47,7 +42,6 @@
         }
         html.dark-theme #gradient-overlay { opacity: 1; }
 
-        /* Кнопка меню */
         #menu-btn {
             position: fixed; top: env(safe-area-inset-top, 44px); right: 25px;
             z-index: 3000; width: 26px; height: 18px;
@@ -56,7 +50,6 @@
         }
         .burger-line { width: 100%; height: 1.5px; background: #fff; border-radius: 1px; }
 
-        /* МЕНЮ: бездонный черный фон */
         #month-menu {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #000; z-index: 4000;
@@ -73,11 +66,11 @@
         .nav-zone { width: 50%; height: 100%; }
     </style>
 </head>
-<body class="light-mode">
+<body>
 
     <div id="bg-wrapper">
         <div id="gradient-overlay"></div>
-        <img id="main-img" src="" alt="">
+        <img id="main-img" src="" alt="" style="opacity: 0;">
     </div>
 
     <div id="click-container">
@@ -94,16 +87,6 @@
     <div id="month-menu">
         <div class="close-menu" onclick="toggleMenu(false)">×</div>
         <div class="month-item" onclick="goToMonth(1)">Январь</div>
-        <div class="month-item" onclick="goToMonth(2)">Февраль</div>
-        <div class="month-item" onclick="goToMonth(3)">Март</div>
-        <div class="month-item" onclick="goToMonth(4)">Апрель</div>
-        <div class="month-item" onclick="goToMonth(5)">Май</div>
-        <div class="month-item" onclick="goToMonth(6)">Июнь</div>
-        <div class="month-item" onclick="goToMonth(7)">Июль</div>
-        <div class="month-item" onclick="goToMonth(8)">Август</div>
-        <div class="month-item" onclick="goToMonth(9)">Сентябрь</div>
-        <div class="month-item" onclick="goToMonth(10)">Октябрь</div>
-        <div class="month-item" onclick="goToMonth(11)">Ноябрь</div>
         <div class="month-item" onclick="goToMonth(12)">Декабрь</div>
     </div>
 
@@ -118,12 +101,17 @@
 
         function formatNumber(num) { return num.toString().padStart(3, '0'); }
 
+        // ПРЕДЗАГРУЗКА: подгружаем следующую картинку заранее
+        function preloadNext(nextPage) {
+            const img = new Image();
+            img.src = `pages/${formatNumber(nextPage)}.JPG`;
+        }
+
         function updateImage(isFirstLoad = false) {
             const fileName = formatNumber(currentPage);
             const imgPath = `pages/${fileName}.JPG`;
             const isSplash = splashPages.includes(currentPage);
             
-            // 1. МГНОВЕННО готовим фон под картинкой
             if (isSplash) {
                 html.classList.add('dark-theme');
                 themeMeta.setAttribute('content', '#000000');
@@ -132,18 +120,16 @@
                 themeMeta.setAttribute('content', '#FAFAF8');
             }
 
-            // 2. Если это просто перелистывание — плавно гасим старую
-            if (!isFirstLoad) mainImg.style.opacity = '0.4';
+            // Вместо 0 используем 0.2, чтобы избежать перерисовки слоя
+            if (!isFirstLoad) mainImg.style.opacity = '0.2'; 
 
             const tempImg = new Image();
             tempImg.src = imgPath;
             tempImg.onload = () => {
                 mainImg.src = imgPath;
                 mainImg.style.opacity = '1';
-            };
-            tempImg.onerror = () => {
-                mainImg.src = `pages/${fileName}.jpg`;
-                mainImg.style.opacity = '1';
+                // Предзагружаем следующую страницу
+                preloadNext(currentPage + 1 > totalFiles ? 1 : currentPage + 1);
             };
 
             localStorage.setItem('lastLinePage', currentPage);
@@ -167,31 +153,28 @@
                 const savedPage = localStorage.getItem('lastLinePage');
                 const savedDate = localStorage.getItem('lastUpdateDate');
                 
-                if (savedDate != now.getDate()) { currentPage = targetPage; } 
-                else { currentPage = (savedPage && savedPage != 1) ? parseInt(savedPage) : targetPage; }
-                
+                currentPage = (savedDate == now.getDate() && savedPage) ? parseInt(savedPage) : targetPage;
                 updateImage();
                 document.getElementById('menu-btn').style.opacity = 1;
             }, 2200);
         }
 
-        function toggleMenu(show) { 
+        function toggleMenu(show) {
             const menu = document.getElementById('month-menu');
+            menu.style.display = show ? 'flex' : 'none';
             if (show) {
-                menu.style.display = 'flex';
                 html.classList.add('dark-theme');
                 themeMeta.setAttribute('content', '#000000');
             } else {
-                menu.style.display = 'none';
-                updateImage(); // Возвращаем тему текущей страницы
+                updateImage();
             }
         }
-        
-        function goToMonth(m) { 
+
+        function goToMonth(m) {
             const monthPages = {1:2, 2:34, 3:63, 4:95, 5:126, 6:158, 7:189, 8:221, 9:253, 10:284, 11:316, 12:347};
-            currentPage = monthPages[m]; 
-            updateImage(); 
-            toggleMenu(false); 
+            currentPage = monthPages[m];
+            updateImage();
+            toggleMenu(false);
         }
 
         runSplash();
