@@ -16,7 +16,7 @@
             width: 100%; height: 100%; 
             overflow: hidden; position: fixed;
             background-color: #FAFAF8; 
-            transition: background-color 0.4s ease;
+            transition: background-color 0.3s ease;
         }
 
         html.dark-theme, html.dark-theme body { background-color: #000 !important; }
@@ -29,15 +29,14 @@
         #main-img {
             width: 100%; height: 100%;
             object-fit: cover; object-position: center top;
-            /* Тот самый Opacity 0.2 для удержания слоя в памяти */
-            transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
-            will-change: opacity;
+            transition: opacity 0.3s ease-in-out;
+            opacity: 1; /* По умолчанию видна */
         }
 
         #gradient-overlay {
-            position: absolute; left: 0; bottom: 0; width: 100%; height: 100px; 
+            position: absolute; left: 0; bottom: 0; width: 100%; height: 110px; 
             background: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.8) 100%);
-            z-index: 10; opacity: 0; transition: opacity 0.4s ease;
+            z-index: 10; opacity: 0; transition: opacity 0.3s ease;
             pointer-events: none;
         }
         html.dark-theme #gradient-overlay { opacity: 1; }
@@ -70,7 +69,7 @@
 
     <div id="bg-wrapper">
         <div id="gradient-overlay"></div>
-        <img id="main-img" src="" alt="" style="opacity: 0;">
+        <img id="main-img" src="">
     </div>
 
     <div id="click-container">
@@ -87,6 +86,16 @@
     <div id="month-menu">
         <div class="close-menu" onclick="toggleMenu(false)">×</div>
         <div class="month-item" onclick="goToMonth(1)">Январь</div>
+        <div class="month-item" onclick="goToMonth(2)">Февраль</div>
+        <div class="month-item" onclick="goToMonth(3)">Март</div>
+        <div class="month-item" onclick="goToMonth(4)">Апрель</div>
+        <div class="month-item" onclick="goToMonth(5)">Май</div>
+        <div class="month-item" onclick="goToMonth(6)">Июнь</div>
+        <div class="month-item" onclick="goToMonth(7)">Июль</div>
+        <div class="month-item" onclick="goToMonth(8)">Август</div>
+        <div class="month-item" onclick="goToMonth(9)">Сентябрь</div>
+        <div class="month-item" onclick="goToMonth(10)">Октябрь</div>
+        <div class="month-item" onclick="goToMonth(11)">Ноябрь</div>
         <div class="month-item" onclick="goToMonth(12)">Декабрь</div>
     </div>
 
@@ -101,10 +110,10 @@
 
         function formatNumber(num) { return num.toString().padStart(3, '0'); }
 
-        // ПРЕДЗАГРУЗКА: подгружаем следующую картинку заранее
-        function preloadNext(nextPage) {
+        function preloadNext() {
+            const next = (currentPage % totalFiles) + 1;
             const img = new Image();
-            img.src = `pages/${formatNumber(nextPage)}.JPG`;
+            img.src = `pages/${formatNumber(next)}.JPG`;
         }
 
         function updateImage(isFirstLoad = false) {
@@ -112,6 +121,7 @@
             const imgPath = `pages/${fileName}.JPG`;
             const isSplash = splashPages.includes(currentPage);
             
+            // Смена темы
             if (isSplash) {
                 html.classList.add('dark-theme');
                 themeMeta.setAttribute('content', '#000000');
@@ -120,16 +130,25 @@
                 themeMeta.setAttribute('content', '#FAFAF8');
             }
 
-            // Вместо 0 используем 0.2, чтобы избежать перерисовки слоя
-            if (!isFirstLoad) mainImg.style.opacity = '0.2'; 
+            if (isFirstLoad) {
+                mainImg.src = imgPath;
+                mainImg.style.opacity = '1';
+                return;
+            }
 
+            // Плавная замена: сначала чуть приглушаем, потом меняем
+            mainImg.style.opacity = '0.5';
+            
             const tempImg = new Image();
             tempImg.src = imgPath;
             tempImg.onload = () => {
                 mainImg.src = imgPath;
                 mainImg.style.opacity = '1';
-                // Предзагружаем следующую страницу
-                preloadNext(currentPage + 1 > totalFiles ? 1 : currentPage + 1);
+                preloadNext();
+            };
+            tempImg.onerror = () => {
+                mainImg.src = `pages/${fileName}.jpg`;
+                mainImg.style.opacity = '1';
             };
 
             localStorage.setItem('lastLinePage', currentPage);
