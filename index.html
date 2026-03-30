@@ -12,9 +12,10 @@
     <style>
         body, html { 
             margin: 0; padding: 0; 
-            width: 100%; height: 100dvh; 
+            width: 100%; height: 100%; 
             background: #000; 
             overflow: hidden; 
+            position: fixed; /* Фиксируем от скролла */
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
         }
         
@@ -24,10 +25,9 @@
         }
         
         img { 
-            width: 100vw; height: 100dvh; 
+            width: 100vw; height: 100%; 
             object-fit: cover; display: block;
-            /* Плавность для растворения и проявления */
-            transition: opacity 0.6s ease-in-out;
+            transition: opacity 0.5s ease-in-out;
             opacity: 0;
         }
 
@@ -73,7 +73,7 @@
         <div class="month-item" onclick="goToMonth(7)">Июль</div>
         <div class="month-item" onclick="goToMonth(8)">Август</div>
         <div class="month-item" onclick="goToMonth(9)">Сентябрь</div>
-        <div class="month-item" onclick="onclick="goToMonth(10)">Октябрь</div>
+        <div class="month-item" onclick="goToMonth(10)">Октябрь</div>
         <div class="month-item" onclick="goToMonth(11)">Ноябрь</div>
         <div class="month-item" onclick="goToMonth(12)">Декабрь</div>
     </div>
@@ -94,18 +94,18 @@
 
         function formatNumber(num) { return num.toString().padStart(3, '0'); }
 
-        // Принудительный "пинок" высоты для Safari
         function fixSafariHeight() {
-            imgElement.style.height = window.innerHeight + 'px';
+            // Принудительно ставим высоту через внутреннее окно
+            const h = window.innerHeight;
+            document.body.style.height = h + 'px';
+            imgElement.style.height = h + 'px';
             window.scrollTo(0, 0);
         }
 
-        function updateImage(isSplashInit = false) {
+        function updateImage(isSplash = false) {
             const fileName = formatNumber(currentPage);
             const pathJPG = `pages/${fileName}.JPG`;
             const pathjpg = `pages/${fileName}.jpg`;
-
-            // ГЛАВНОЕ: Мы убрали обнуление opacity при обычном листании!
 
             const tempImg = new Image();
             tempImg.src = pathJPG;
@@ -113,7 +113,8 @@
             tempImg.onload = function() {
                 imgElement.src = tempImg.src;
                 imgElement.style.opacity = 1;
-                fixSafariHeight();
+                // Небольшая задержка перед фиксом высоты, чтобы Safari "проснулся"
+                setTimeout(fixSafariHeight, 100);
             };
             
             tempImg.onerror = function() {
@@ -121,7 +122,7 @@
                     imgElement.src = pathjpg;
                     imgElement.onload = () => {
                         imgElement.style.opacity = 1;
-                        fixSafariHeight();
+                        setTimeout(fixSafariHeight, 100);
                     };
                 }
             };
@@ -148,37 +149,37 @@
         }
 
         function runSplash() {
-            // 1. Показываем заставку 001 сразу
+            // 1. Показываем заставку 001
             currentPage = 1;
             updateImage(true);
-            fixSafariHeight();
             
             setTimeout(() => {
-                // 2. Растворяем её (уходим в прозрачность)
+                // 2. Рассчитываем целевую страницу
+                const now = new Date();
+                const start = new Date(now.getFullYear(), 0, 0);
+                const targetPage = Math.floor((now - start) / 86400000) + OFFSET;
+                
+                const savedDate = localStorage.getItem('lastUpdateDate');
+                const savedPage = localStorage.getItem('lastLinePage');
+                
+                if (savedDate == now.getDate() && savedPage) {
+                    currentPage = parseInt(savedPage);
+                } else {
+                    currentPage = targetPage;
+                }
+
+                // 3. Мягко гасим заставку
                 imgElement.style.opacity = 0;
 
+                // 4. Через время анимации загружаем новую дату
                 setTimeout(() => {
-                    // 3. Вычисляем актуальную дату
-                    const now = new Date();
-                    const start = new Date(now.getFullYear(), 0, 0);
-                    const targetPage = Math.floor((now - start) / 86400000) + OFFSET;
-                    
-                    const savedDate = localStorage.getItem('lastUpdateDate');
-                    const savedPage = localStorage.getItem('lastLinePage');
-                    
-                    if (savedDate == now.getDate() && savedPage) {
-                        currentPage = parseInt(savedPage);
-                    } else {
-                        currentPage = targetPage;
-                    }
-
-                    // 4. Загружаем новую картинку (она плавно проявится через opacity 1)
                     updateImage(); 
                     menuBtn.style.opacity = 1;
-                }, 700); 
+                }, 500); 
             }, 2000);
         }
 
+        window.addEventListener('load', fixSafariHeight);
         window.addEventListener('resize', fixSafariHeight);
         runSplash();
     </script>
