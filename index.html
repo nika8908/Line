@@ -10,57 +10,80 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="ЛИНИЯ">
     <link rel="apple-touch-icon" href="icon-512.png">
-    <meta name="theme-color" content="#000000">
 
     <style>
-        /* Черный фон убирает белые полосы навсегда */
         body, html { 
             margin: 0; padding: 0; 
-            width: 100%; height: 100dvh; 
-            background: #000; 
+            width: 100%; 
+            height: 100dvh; 
+            background: #000; /* Черный фон сразу, чтобы не было белого */
             overflow: hidden; 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
         }
         
         #calendar-container { 
             position: relative; 
-            width: 100%; height: 100%; 
-            display: flex; justify-content: center; align-items: center; 
+            width: 100%; 
+            height: 100%; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            overflow: hidden;
         }
         
         img { 
-            width: 100vw; height: 100dvh; 
-            object-fit: cover; display: block;
-            /* Ускоренный переход для бесшовности */
-            transition: opacity 0.2s ease-in-out;
+            width: 100vw; 
+            height: 100dvh; 
+            object-fit: cover; 
+            display: block;
+            transition: opacity 0.6s ease-in-out; /* Чуть медленнее для красоты */
             opacity: 0;
         }
 
         .nav-zone { 
             position: absolute; top: 0; width: 45%; height: 100%; 
-            z-index: 10; cursor: pointer; -webkit-tap-highlight-color: transparent; 
+            z-index: 10; cursor: pointer; 
+            -webkit-tap-highlight-color: transparent; 
         }
         .prev { left: 0; }
         .next { right: 0; }
 
         #menu-btn {
-            position: absolute; top: env(safe-area-inset-top, 25px); right: 20px; 
-            z-index: 1000; width: 26px; height: 18px; 
+            position: absolute; 
+            top: env(safe-area-inset-top, 25px); 
+            right: 20px; 
+            z-index: 1000;
+            width: 26px; height: 18px; 
             display: flex; flex-direction: column; justify-content: space-between;
+            cursor: pointer; 
             opacity: 0; transition: opacity 0.5s ease;
         }
-        .burger-line { width: 100%; height: 1.2px; background: #fff; border-radius: 0.5px; }
+        .burger-line {
+            width: 100%; height: 1.2px; 
+            background: #fff; 
+            border-radius: 0.5px;
+        }
 
         #month-menu {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.95); z-index: 2000;
+            background: rgba(0, 0, 0, 0.95); 
+            z-index: 2000;
             display: none; flex-direction: column; justify-content: center; align-items: center;
-            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
         }
-        #month-menu::after { content: ""; position: absolute; bottom: -20vh; width: 100%; height: 20vh; background: #000; }
-
-        .month-item { padding: 12px; font-size: 20px; color: #fff; width: 100%; text-align: center; font-weight: 300; }
-        .close-menu { position: absolute; top: env(safe-area-inset-top, 20px); right: 25px; font-size: 40px; color: #fff; }
+        .month-item { 
+            padding: 12px; font-size: 20px; color: #fff; 
+            cursor: pointer; width: 100%; text-align: center;
+            font-weight: 300;
+        }
+        
+        .close-menu { 
+            position: absolute; 
+            top: env(safe-area-inset-top, 20px); 
+            right: 25px; 
+            font-size: 40px; color: #fff; cursor: pointer; 
+        }
     </style>
 </head>
 <body>
@@ -99,33 +122,60 @@
         const OFFSET = 4;
         const imgElement = document.getElementById('main-img');
         const menuBtn = document.getElementById('menu-btn');
-        const monthPages = { 1:2, 2:34, 3:63, 4:95, 5:126, 6:158, 7:189, 8:221, 9:253, 10:284, 11:316, 12:347 };
+
+        const monthPages = {
+            1: 2, 2: 34, 3: 63, 4: 95, 5: 126, 6: 158, 
+            7: 189, 8: 221, 9: 253, 10: 284, 11: 316, 12: 347
+        };
 
         function formatNumber(num) { return num.toString().padStart(3, '0'); }
 
+        function getDayOfYear() {
+            const now = new Date();
+            const start = new Date(now.getFullYear(), 0, 0);
+            return Math.floor((now - start) / (1000 * 60 * 60 * 24));
+        }
+
+        // Исправляем высоту принудительно для Safari
+        function fixSafariHeight() {
+            const vh = window.innerHeight;
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
+            imgElement.style.height = `${vh}px`;
+        }
+
+        function toggleMenu(show) {
+            document.getElementById('month-menu').style.display = show ? 'flex' : 'none';
+        }
+
+        function goToMonth(m) {
+            currentPage = monthPages[m];
+            updateImage();
+            toggleMenu(false);
+        }
+
         function updateImage(isSplash = false) {
             const fileName = formatNumber(currentPage);
-            
-            // Чтобы не было "белой вспышки", не убираем прозрачность в 0
-            if (!isSplash) imgElement.style.opacity = 0.6;
+            const pathJPG = `pages/${fileName}.JPG`;
+            const pathjpg = `pages/${fileName}.jpg`;
+
+            // Убрали сброс opacity в 0 при обычном листании!
             
             const tempImg = new Image();
-            tempImg.src = `pages/${fileName}.JPG`;
+            tempImg.src = pathJPG;
             
             tempImg.onload = function() {
                 imgElement.src = tempImg.src;
                 imgElement.style.opacity = 1;
-                // Предзагрузка следующей для скорости
-                const next = new Image();
-                next.src = `pages/${formatNumber(currentPage + 1 > totalFiles ? 1 : currentPage + 1)}.JPG`;
+                fixSafariHeight(); // Поправляем высоту при каждой смене
             };
             
             tempImg.onerror = function() {
-                // Твоя проверенная логика смены регистра
-                const fallback = `pages/${fileName}.jpg`;
-                if (imgElement.src !== fallback) {
-                    imgElement.src = fallback;
-                    imgElement.onload = () => imgElement.style.opacity = 1;
+                if (!this.src.includes('.jpg')) {
+                    imgElement.src = pathjpg;
+                    imgElement.onload = () => {
+                        imgElement.style.opacity = 1;
+                        fixSafariHeight();
+                    };
                 }
             };
             
@@ -140,38 +190,36 @@
             updateImage();
         }
 
-        function toggleMenu(show) {
-            document.getElementById('month-menu').style.display = show ? 'flex' : 'none';
-        }
-
-        function goToMonth(m) {
-            currentPage = monthPages[m];
-            updateImage();
-            toggleMenu(false);
-        }
-
         function runSplash() {
+            // 1. Показываем заставку (001)
             currentPage = 1; 
             updateImage(true);
+            fixSafariHeight();
             
+            // 2. Через 2.2 секунды растворяем её и открываем нужную дату
             setTimeout(() => {
-                const now = new Date();
-                const start = new Date(now.getFullYear(), 0, 0);
-                const targetPage = Math.floor((now - start) / 86400000) + OFFSET;
-                
-                const savedDate = localStorage.getItem('lastUpdateDate');
-                const savedPage = localStorage.getItem('lastLinePage');
-                
-                if (savedDate == now.getDate() && savedPage) {
-                    currentPage = parseInt(savedPage);
-                } else {
-                    currentPage = targetPage;
-                }
-                updateImage();
-                menuBtn.style.opacity = 1;
+                // Плавное растворение заставки
+                imgElement.style.opacity = 0;
+
+                setTimeout(() => {
+                    const now = new Date();
+                    const targetPage = getDayOfYear() + OFFSET;
+                    const savedDate = localStorage.getItem('lastUpdateDate');
+                    const savedPage = localStorage.getItem('lastLinePage');
+                    
+                    if (savedDate == now.getDate() && savedPage) {
+                        currentPage = parseInt(savedPage);
+                    } else {
+                        currentPage = targetPage;
+                    }
+                    
+                    updateImage(); // Здесь картинка плавно проявится
+                    menuBtn.style.opacity = 1;
+                }, 600); // Время на полное исчезновение перед подменой
             }, 2200);
         }
 
+        window.addEventListener('resize', fixSafariHeight);
         runSplash();
     </script>
 </body>
