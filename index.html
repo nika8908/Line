@@ -9,18 +9,19 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="icon-512.png">
     
-    <meta name="theme-color" content="#f8f8f8">
+    <meta id="theme-meta" name="theme-color" content="#000000">
 
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
         html, body { 
             width: 100%; 
-            height: 100dvh; /* Динамическая высота для Safari */
-            background: #f8f8f8; 
+            height: 100dvh; 
+            background: #000; /* Изначально черный для заставки */
             overflow: hidden; 
             position: fixed; 
             font-family: -apple-system, sans-serif;
+            transition: background 0.5s ease;
         }
 
         #main-container {
@@ -41,7 +42,6 @@
             opacity: 0;
         }
 
-        /* Навигация */
         .nav-zone { 
             position: absolute; top: 0; width: 45%; height: 100%; 
             z-index: 100; -webkit-tap-highlight-color: transparent; 
@@ -49,7 +49,6 @@
         .prev { left: 0; }
         .next { right: 0; }
 
-        /* Меню-бургер */
         #menu-btn {
             position: fixed; 
             top: env(safe-area-inset-top, 25px); 
@@ -71,7 +70,7 @@
 
         #month-menu {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(248, 248, 248, 0.98); 
+            background: rgba(250, 250, 248, 0.98); 
             z-index: 2000; 
             display: none; 
             flex-direction: column; 
@@ -80,14 +79,8 @@
             backdrop-filter: blur(15px); 
             -webkit-backdrop-filter: blur(15px);
         }
-        .month-item { 
-            padding: 15px; font-size: 20px; color: #333; 
-            width: 100%; text-align: center; font-weight: 300; 
-        }
-        .close-menu { 
-            position: absolute; top: env(safe-area-inset-top, 20px); 
-            right: 25px; font-size: 40px; color: #333; 
-        }
+        .month-item { padding: 15px; font-size: 20px; color: #333; width: 100%; text-align: center; font-weight: 300; }
+        .close-menu { position: absolute; top: env(safe-area-inset-top, 20px); right: 25px; font-size: 40px; color: #333; }
     </style>
 </head>
 <body>
@@ -126,22 +119,29 @@
         const OFFSET = 4;
         const img = document.getElementById('main-img');
         const menuBtn = document.getElementById('menu-btn');
+        const themeMeta = document.getElementById('theme-meta');
         const monthPages = { 1:2, 2:34, 3:63, 4:95, 5:126, 6:158, 7:189, 8:221, 9:253, 10:284, 11:316, 12:347 };
 
         function format(n) { return n.toString().padStart(3, '0'); }
 
-        function fixSize() {
-            window.scrollTo(0, 0);
+        // Функция управления "невидимой полосой"
+        function applyBackground(page) {
+            const color = (page === 1) ? "#000000" : "#fafaf8";
+            document.body.style.background = color;
+            themeMeta.setAttribute("content", color);
         }
 
         function loadImg(pageNumber, isInstant = false) {
             const num = format(pageNumber);
             const temp = new Image();
             
+            // Настраиваем фон под будущую картинку заранее
+            applyBackground(pageNumber);
+
             temp.onload = () => {
                 img.src = temp.src;
                 img.style.opacity = 1;
-                fixSize();
+                window.scrollTo(0, 0);
             };
 
             temp.onerror = () => {
@@ -153,7 +153,6 @@
             if (!isInstant) img.style.opacity = 0; 
             temp.src = `pages/${num}.JPG`;
 
-            // Не запоминаем заставку в истории
             if (pageNumber !== 1) {
                 localStorage.setItem('lastLinePage', pageNumber);
                 localStorage.setItem('lastUpdateDate', new Date().getDate());
@@ -171,16 +170,16 @@
         function goToMonth(m) { currentPage = monthPages[m]; loadImg(currentPage); toggleMenu(false); }
 
         function startApp() {
-            // 1. Показываем заставку
+            // 1. Показываем заставку 001
             currentPage = 1;
             loadImg(1, true);
 
             setTimeout(() => {
-                // 2. Растворяем
+                // 2. Плавно скрываем заставку
                 img.style.opacity = 0;
 
                 setTimeout(() => {
-                    // 3. Переход на дату
+                    // 3. Вычисляем и загружаем АКТУАЛЬНУЮ ДАТУ
                     const now = new Date();
                     const startYear = new Date(now.getFullYear(), 0, 0);
                     const dayOfYear = Math.floor((now - startYear) / 86400000);
@@ -195,14 +194,14 @@
                         currentPage = target;
                     }
                     
+                    // Загружаем картинку даты
                     loadImg(currentPage);
                     menuBtn.style.opacity = 1;
                 }, 800);
             }, 2200);
         }
 
-        window.addEventListener('resize', fixSize);
-        window.addEventListener('load', fixSize);
+        window.addEventListener('resize', () => window.scrollTo(0, 0));
         startApp();
     </script>
 </body>
