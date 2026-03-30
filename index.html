@@ -12,6 +12,7 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
+        /* Базовая стабильность */
         html, body { 
             width: 100%; height: 100%; 
             overflow: hidden; position: fixed;
@@ -19,6 +20,7 @@
             transition: background-color 0.3s ease;
         }
 
+        /* Темная тема для заставок и меню */
         html.dark-theme, html.dark-theme body { background-color: #000 !important; }
 
         #bg-wrapper {
@@ -29,18 +31,20 @@
         #main-img {
             width: 100%; height: 100%;
             object-fit: cover; object-position: center top;
-            transition: opacity 0.3s ease-in-out;
-            opacity: 1; /* По умолчанию видна */
+            display: block;
+            transition: opacity 0.2s ease-in-out; /* Быстрая смена */
         }
 
+        /* СУЖЕННЫЙ ГРАДИЕНТ: теперь он занимает только самый низ */
         #gradient-overlay {
-            position: absolute; left: 0; bottom: 0; width: 100%; height: 110px; 
-            background: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.8) 100%);
+            position: absolute; left: 0; bottom: 0; width: 100%; height: 90px; 
+            background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.85));
             z-index: 10; opacity: 0; transition: opacity 0.3s ease;
             pointer-events: none;
         }
         html.dark-theme #gradient-overlay { opacity: 1; }
 
+        /* Кнопки и Кнопка бургер */
         #menu-btn {
             position: fixed; top: env(safe-area-inset-top, 44px); right: 25px;
             z-index: 3000; width: 26px; height: 18px;
@@ -49,20 +53,21 @@
         }
         .burger-line { width: 100%; height: 1.5px; background: #fff; border-radius: 1px; }
 
+        #click-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; z-index: 50; }
+        .nav-zone { width: 50%; height: 100%; cursor: pointer; }
+
+        /* МЕНЮ: Полное перекрытие */
         #month-menu {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #000; z-index: 4000;
             display: none; flex-direction: column; justify-content: center; align-items: center;
         }
         #month-menu::after {
-            content: ""; position: absolute; bottom: -50vh; left: 0; width: 100%; height: 50vh; background: #000;
+            content: ""; position: absolute; bottom: -10vh; left: 0; width: 100%; height: 10vh; background: #000;
         }
         
         .month-item { padding: 12px; font-size: 20px; color: #fff; cursor: pointer; width: 100%; text-align: center; }
-        .close-menu { position: absolute; top: env(safe-area-inset-top, 20px); right: 25px; font-size: 40px; color: #fff; }
-
-        #click-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; z-index: 50; }
-        .nav-zone { width: 50%; height: 100%; }
+        .close-menu { position: absolute; top: env(safe-area-inset-top, 20px); right: 25px; font-size: 40px; color: #fff; line-height: 1;}
     </style>
 </head>
 <body>
@@ -110,18 +115,12 @@
 
         function formatNumber(num) { return num.toString().padStart(3, '0'); }
 
-        function preloadNext() {
-            const next = (currentPage % totalFiles) + 1;
-            const img = new Image();
-            img.src = `pages/${formatNumber(next)}.JPG`;
-        }
-
         function updateImage(isFirstLoad = false) {
             const fileName = formatNumber(currentPage);
             const imgPath = `pages/${fileName}.JPG`;
             const isSplash = splashPages.includes(currentPage);
             
-            // Смена темы
+            // 1. Мгновенно готовим фон
             if (isSplash) {
                 html.classList.add('dark-theme');
                 themeMeta.setAttribute('content', '#000000');
@@ -130,27 +129,8 @@
                 themeMeta.setAttribute('content', '#FAFAF8');
             }
 
-            if (isFirstLoad) {
-                mainImg.src = imgPath;
-                mainImg.style.opacity = '1';
-                return;
-            }
-
-            // Плавная замена: сначала чуть приглушаем, потом меняем
-            mainImg.style.opacity = '0.5';
-            
-            const tempImg = new Image();
-            tempImg.src = imgPath;
-            tempImg.onload = () => {
-                mainImg.src = imgPath;
-                mainImg.style.opacity = '1';
-                preloadNext();
-            };
-            tempImg.onerror = () => {
-                mainImg.src = `pages/${fileName}.jpg`;
-                mainImg.style.opacity = '1';
-            };
-
+            // 2. Без анимаций, просто меняем картинку
+            mainImg.src = imgPath;
             localStorage.setItem('lastLinePage', currentPage);
             localStorage.setItem('lastUpdateDate', new Date().getDate());
         }
@@ -166,11 +146,11 @@
             currentPage = 1;
             updateImage(true);
             setTimeout(() => {
+                const savedPage = localStorage.getItem('lastLinePage');
+                const savedDate = localStorage.getItem('lastUpdateDate');
                 const now = new Date();
                 const start = new Date(now.getFullYear(), 0, 0);
                 const targetPage = Math.floor((now - start) / 86400000) + OFFSET;
-                const savedPage = localStorage.getItem('lastLinePage');
-                const savedDate = localStorage.getItem('lastUpdateDate');
                 
                 currentPage = (savedDate == now.getDate() && savedPage) ? parseInt(savedPage) : targetPage;
                 updateImage();
@@ -179,8 +159,7 @@
         }
 
         function toggleMenu(show) {
-            const menu = document.getElementById('month-menu');
-            menu.style.display = show ? 'flex' : 'none';
+            document.getElementById('month-menu').style.display = show ? 'flex' : 'none';
             if (show) {
                 html.classList.add('dark-theme');
                 themeMeta.setAttribute('content', '#000000');
