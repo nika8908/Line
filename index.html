@@ -17,11 +17,11 @@
         html, body { 
             width: 100%; 
             height: 100dvh; 
-            background: #000; /* Изначально черный для заставки */
+            background: #000; 
             overflow: hidden; 
             position: fixed; 
             font-family: -apple-system, sans-serif;
-            transition: background 0.5s ease;
+            transition: background 0.3s ease;
         }
 
         #main-container {
@@ -38,8 +38,21 @@
             height: 100%; 
             object-fit: cover; 
             display: block;
-            transition: opacity 0.8s ease-in-out; 
+            /* Ускорили переход: было 0.8s стало 0.4s */
+            transition: opacity 0.4s ease-in-out; 
             opacity: 0;
+            z-index: 10;
+        }
+
+        #grad-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 18dvh; 
+            pointer-events: none;
+            z-index: 20;
+            transition: background 0.3s ease;
         }
 
         .nav-zone { 
@@ -54,33 +67,19 @@
             top: env(safe-area-inset-top, 25px); 
             right: 20px; 
             z-index: 1000; 
-            width: 26px; 
-            height: 18px; 
-            display: flex; 
-            flex-direction: column; 
-            justify-content: space-between; 
-            opacity: 0; 
-            transition: opacity 1s ease;
+            width: 26px; height: 18px; 
+            display: flex; flex-direction: column; justify-content: space-between; 
+            opacity: 0; transition: opacity 0.6s ease;
         }
-        .burger-line { 
-            width: 100%; height: 1.2px; 
-            background: rgba(0, 0, 0, 0.4); 
-            border-radius: 0.5px; 
-        }
+        .burger-line { width: 100%; height: 1.2px; background: rgba(0,0,0,0.4); border-radius: 0.5px; }
 
         #month-menu {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(250, 250, 248, 0.98); 
-            z-index: 2000; 
-            display: none; 
-            flex-direction: column; 
-            justify-content: center; 
-            align-items: center;
-            backdrop-filter: blur(15px); 
-            -webkit-backdrop-filter: blur(15px);
+            background: rgba(250, 250, 248, 0.98); z-index: 2000; 
+            display: none; flex-direction: column; justify-content: center; align-items: center;
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
         }
         .month-item { padding: 15px; font-size: 20px; color: #333; width: 100%; text-align: center; font-weight: 300; }
-        .close-menu { position: absolute; top: env(safe-area-inset-top, 20px); right: 25px; font-size: 40px; color: #333; }
     </style>
 </head>
 <body>
@@ -88,17 +87,15 @@
     <div id="main-container">
         <div class="nav-zone prev" onclick="changePage(-1)"></div>
         <img id="main-img" src="">
+        <div id="grad-overlay"></div>
         <div class="nav-zone next" onclick="changePage(1)"></div>
     </div>
 
     <div id="menu-btn" onclick="toggleMenu(true)">
-        <div class="burger-line"></div>
-        <div class="burger-line"></div>
-        <div class="burger-line"></div>
+        <div class="burger-line"></div><div class="burger-line"></div><div class="burger-line"></div>
     </div>
 
     <div id="month-menu">
-        <div class="close-menu" onclick="toggleMenu(false)">×</div>
         <div class="month-item" onclick="goToMonth(1)">Январь</div>
         <div class="month-item" onclick="goToMonth(2)">Февраль</div>
         <div class="month-item" onclick="goToMonth(3)">Март</div>
@@ -118,25 +115,33 @@
         const totalFiles = 378;
         const OFFSET = 4;
         const img = document.getElementById('main-img');
+        const grad = document.getElementById('grad-overlay');
         const menuBtn = document.getElementById('menu-btn');
         const themeMeta = document.getElementById('theme-meta');
-        const monthPages = { 1:2, 2:34, 3:63, 4:95, 5:126, 6:158, 7:189, 8:221, 9:253, 10:284, 11:316, 12:347 };
+        
+        const splashPages = [1, 2, 34, 63, 95, 126, 158, 189, 221, 253, 284, 316, 347];
 
         function format(n) { return n.toString().padStart(3, '0'); }
 
-        // Функция управления "невидимой полосой"
-        function applyBackground(page) {
-            const color = (page === 1) ? "#000000" : "#fafaf8";
-            document.body.style.background = color;
-            themeMeta.setAttribute("content", color);
+        function updateTheme(page) {
+            const isSplash = splashPages.includes(page);
+            const bgColor = isSplash ? "#000000" : "#fafaf8";
+            const gradColor = isSplash ? "rgba(0,0,0,1)" : "rgba(250,250,248,1)";
+            const transColor = isSplash ? "rgba(0,0,0,0)" : "rgba(250,250,248,0)";
+            
+            document.body.style.background = bgColor;
+            themeMeta.setAttribute("content", bgColor);
+            grad.style.background = `linear-gradient(to bottom, ${transColor} 0%, ${gradColor} 100%)`;
+            
+            const lines = document.querySelectorAll('.burger-line');
+            lines.forEach(l => l.style.background = isSplash ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.4)");
         }
 
         function loadImg(pageNumber, isInstant = false) {
             const num = format(pageNumber);
             const temp = new Image();
             
-            // Настраиваем фон под будущую картинку заранее
-            applyBackground(pageNumber);
+            updateTheme(pageNumber);
 
             temp.onload = () => {
                 img.src = temp.src;
@@ -144,11 +149,7 @@
                 window.scrollTo(0, 0);
             };
 
-            temp.onerror = () => {
-                if (!temp.src.includes('.jpg')) {
-                    temp.src = `pages/${num}.jpg`;
-                }
-            };
+            temp.onerror = () => { if (!temp.src.includes('.jpg')) temp.src = `pages/${num}.jpg`; };
 
             if (!isInstant) img.style.opacity = 0; 
             temp.src = `pages/${num}.JPG`;
@@ -167,24 +168,24 @@
         }
 
         function toggleMenu(s) { document.getElementById('month-menu').style.display = s ? 'flex' : 'none'; }
-        function goToMonth(m) { currentPage = monthPages[m]; loadImg(currentPage); toggleMenu(false); }
+        
+        function goToMonth(m) { 
+            const monthPages = { 1:2, 2:34, 3:63, 4:95, 5:126, 6:158, 7:189, 8:221, 9:253, 10:284, 11:316, 12:347 };
+            currentPage = monthPages[m]; loadImg(currentPage); toggleMenu(false); 
+        }
 
         function startApp() {
-            // 1. Показываем заставку 001
             currentPage = 1;
             loadImg(1, true);
-
+            
+            // Ускорили время показа заставки (1.8с вместо 2.2с)
             setTimeout(() => {
-                // 2. Плавно скрываем заставку
                 img.style.opacity = 0;
-
                 setTimeout(() => {
-                    // 3. Вычисляем и загружаем АКТУАЛЬНУЮ ДАТУ
                     const now = new Date();
                     const startYear = new Date(now.getFullYear(), 0, 0);
                     const dayOfYear = Math.floor((now - startYear) / 86400000);
                     const target = dayOfYear + OFFSET;
-                    
                     const savedDate = localStorage.getItem('lastUpdateDate');
                     const savedPage = localStorage.getItem('lastLinePage');
 
@@ -193,12 +194,10 @@
                     } else {
                         currentPage = target;
                     }
-                    
-                    // Загружаем картинку даты
                     loadImg(currentPage);
                     menuBtn.style.opacity = 1;
-                }, 800);
-            }, 2200);
+                }, 500); // Ускорили переход на дату (0.5с вместо 0.8с)
+            }, 1800);
         }
 
         window.addEventListener('resize', () => window.scrollTo(0, 0));
