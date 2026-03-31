@@ -21,7 +21,6 @@
             overflow: hidden; 
             position: fixed; 
             font-family: -apple-system, sans-serif;
-            /* Убрали transition фона, чтобы не было скачков цвета */
         }
 
         #main-container {
@@ -31,7 +30,6 @@
             display: flex; 
             justify-content: center; 
             align-items: center; 
-            background: #000;
         }
 
         #main-img {
@@ -39,20 +37,21 @@
             height: 100%; 
             object-fit: cover; 
             display: block;
+            transition: opacity 0.2s ease-in-out; 
+            opacity: 0;
             z-index: 10;
-            opacity: 0; /* Изначально скрыто для анимации старта */
         }
 
-        /* Мягкий, узкий градиент ТОЛЬКО для темных заставок */
         #grad-overlay {
             position: absolute;
             bottom: 0;
             left: 0;
             width: 100%;
-            height: 6dvh; /* Сделали уже */
+            height: 6dvh; 
             pointer-events: none;
             z-index: 20;
-            display: none; /* По умолчанию скрыт */
+            opacity: 0;
+            transition: opacity 0.2s ease-in-out;
         }
 
         .nav-zone { 
@@ -62,7 +61,6 @@
         .prev { left: 0; }
         .next { right: 0; }
 
-        /* Кнопка меню - светлая, чтобы читалась везде */
         #menu-btn {
             position: fixed; 
             top: env(safe-area-inset-top, 25px); 
@@ -70,33 +68,17 @@
             z-index: 1000; 
             width: 26px; height: 18px; 
             display: flex; flex-direction: column; justify-content: space-between; 
-            opacity: 0; transition: opacity 0.5s ease;
+            opacity: 0; transition: opacity 0.4s ease;
         }
-        .burger-line { 
-            width: 100%; height: 1.2px; 
-            background: rgba(255, 255, 255, 0.9); /* Почти белый бургер */
-            border-radius: 0.5px; 
-        }
+        .burger-line { width: 100%; height: 1.2px; background: rgba(255, 255, 255, 0.9); border-radius: 0.5px; }
 
-        /* Идеальное Меню без полос */
         #month-menu {
-            position: fixed; top: 0; left: 0; 
-            width: 100%; 
-            height: 100dvh; /* Полная высота */
-            background: #fafaf8; /* Сплошной фон */
-            z-index: 2000; 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100dvh;
+            background: #fafaf8; z-index: 2000; 
             display: none; flex-direction: column; justify-content: center; align-items: center;
-            /* Убрали blur, чтобы был чистый цвет */
         }
         .month-item { padding: 15px; font-size: 20px; color: #333; width: 100%; text-align: center; font-weight: 300; }
-        
-        /* Крестик закрытия */
-        .close-menu { 
-            position: absolute; 
-            top: env(safe-area-inset-top, 20px); 
-            right: 25px; 
-            font-size: 40px; color: #333; 
-        }
+        .close-menu { position: absolute; top: env(safe-area-inset-top, 20px); right: 25px; font-size: 40px; color: #333; }
     </style>
 </head>
 <body>
@@ -141,55 +123,40 @@
 
         function format(n) { return n.toString().padStart(3, '0'); }
 
-        function updateAppearance(page) {
+        // Теперь эта функция вызывается ТОЛЬКО когда картинка загружена
+        function syncAppearance(page) {
             const isSplash = splashPages.includes(page);
             const bgColor = isSplash ? "#000000" : "#fafaf8";
             
-            // 1. Устанавливаем фон
             document.body.style.background = bgColor;
             themeMeta.setAttribute("content", bgColor);
             
-            // 2. Включаем градиент ТОЛЬКО на темных заставках
             if (isSplash) {
-                // Мягкий темный градиент
                 grad.style.background = `linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.8) 100%)`;
-                grad.style.display = 'block';
+                grad.style.opacity = 1;
             } else {
-                grad.style.display = 'none'; // Убираем градиент на цитатах
+                grad.style.opacity = 0;
             }
         }
 
-        function loadImg(pageNumber, isInstant = false, isStart = false) {
+        function loadImg(pageNumber, isInstant = false) {
             const num = format(pageNumber);
             const temp = new Image();
             
-            updateAppearance(pageNumber);
-
             temp.onload = () => {
-                img.src = temp.src;
+                // Сначала синхронизируем фон и градиент под новую картинку
+                syncAppearance(pageNumber);
                 
-                // Мгновенно показываем, если не старт и не заставка 001
-                if (isInstant) {
-                    img.style.transition = 'none'; // Отключаем анимацию
-                    img.style.opacity = 1;
-                    // Включаем анимацию обратно через микропаузу
-                    setTimeout(() => img.style.transition = 'opacity 0.25s ease-in-out', 50);
-                } else {
-                    // Анимация ТОЛЬКО при старте для 001
-                    img.style.transition = 'opacity 0.8s ease-in-out';
-                    img.style.opacity = 1;
-                }
+                // Затем выводим картинку
+                img.src = temp.src;
+                img.style.opacity = 1;
                 window.scrollTo(0, 0);
             };
 
             temp.onerror = () => { if (!temp.src.includes('.jpg')) temp.src = `pages/${num}.jpg`; };
 
-            // Убираем opacity=0 при листании, чтобы не было скачков
-            if (isInstant) {
-                // Не гасим
-            } else {
-                img.style.opacity = 0; // Гасим только при старте
-            }
+            // При листании не прячем картинку полностью, чтобы не было черного экрана
+            if (!isInstant) img.style.opacity = 0; 
             
             temp.src = `pages/${num}.JPG`;
 
@@ -203,11 +170,10 @@
             currentPage += step;
             if (currentPage < 1) currentPage = totalFiles;
             if (currentPage > totalFiles) currentPage = 1;
-            loadImg(currentPage, true); // Мгновенная загрузка
+            loadImg(currentPage, true);
         }
 
         function toggleMenu(s) { document.getElementById('month-menu').style.display = s ? 'flex' : 'none'; }
-        
         function goToMonth(m) { 
             const monthPages = { 1:2, 2:34, 3:63, 4:95, 5:126, 6:158, 7:189, 8:221, 9:253, 10:284, 11:316, 12:347 };
             currentPage = monthPages[m]; loadImg(currentPage, true); toggleMenu(false); 
@@ -215,13 +181,10 @@
 
         function startApp() {
             currentPage = 1;
-            loadImg(1, false, true); // Плавный старт для 001
+            loadImg(1, true);
             
             setTimeout(() => {
-                // Анимация растворения только для главной
-                img.style.transition = 'opacity 0.5s ease-in-out';
                 img.style.opacity = 0;
-                
                 setTimeout(() => {
                     const now = new Date();
                     const startYear = new Date(now.getFullYear(), 0, 0);
@@ -230,17 +193,11 @@
                     const isSession = sessionStorage.getItem('sessionActive');
                     const savedPage = localStorage.getItem('lastLinePage');
 
-                    if (isSession && savedPage) {
-                        currentPage = parseInt(savedPage);
-                    } else {
-                        currentPage = target;
-                    }
-                    
-                    // Переключаем на дату мгновенно
-                    loadImg(currentPage, true); 
+                    currentPage = (isSession && savedPage) ? parseInt(savedPage) : target;
+                    loadImg(currentPage, true);
                     menuBtn.style.opacity = 1;
-                }, 500); 
-            }, 1800);
+                }, 300);
+            }, 1500);
         }
 
         window.addEventListener('resize', () => window.scrollTo(0, 0));
