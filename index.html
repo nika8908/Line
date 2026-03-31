@@ -21,7 +21,7 @@
             overflow: hidden; 
             position: fixed; 
             font-family: -apple-system, sans-serif;
-            transition: background 0.2s ease;
+            /* Убрали transition фона, чтобы не было скачков цвета */
         }
 
         #main-container {
@@ -31,6 +31,7 @@
             display: flex; 
             justify-content: center; 
             align-items: center; 
+            background: #000;
         }
 
         #main-img {
@@ -38,21 +39,20 @@
             height: 100%; 
             object-fit: cover; 
             display: block;
-            /* Микросекундная скорость перехода */
-            transition: opacity 0.25s ease-in-out; 
-            opacity: 0;
             z-index: 10;
+            opacity: 0; /* Изначально скрыто для анимации старта */
         }
 
+        /* Мягкий, узкий градиент ТОЛЬКО для темных заставок */
         #grad-overlay {
             position: absolute;
             bottom: 0;
             left: 0;
             width: 100%;
-            height: 8dvh; /* Уменьшили высоту градиента, чтобы не мешал тексту */
+            height: 6dvh; /* Сделали уже */
             pointer-events: none;
             z-index: 20;
-            transition: background 0.2s ease;
+            display: none; /* По умолчанию скрыт */
         }
 
         .nav-zone { 
@@ -62,6 +62,7 @@
         .prev { left: 0; }
         .next { right: 0; }
 
+        /* Кнопка меню - светлая, чтобы читалась везде */
         #menu-btn {
             position: fixed; 
             top: env(safe-area-inset-top, 25px); 
@@ -69,17 +70,33 @@
             z-index: 1000; 
             width: 26px; height: 18px; 
             display: flex; flex-direction: column; justify-content: space-between; 
-            opacity: 0; transition: opacity 0.4s ease;
+            opacity: 0; transition: opacity 0.5s ease;
         }
-        .burger-line { width: 100%; height: 1.2px; background: rgba(0,0,0,0.4); border-radius: 0.5px; }
+        .burger-line { 
+            width: 100%; height: 1.2px; 
+            background: rgba(255, 255, 255, 0.9); /* Почти белый бургер */
+            border-radius: 0.5px; 
+        }
 
+        /* Идеальное Меню без полос */
         #month-menu {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(250, 250, 248, 0.98); z-index: 2000; 
+            position: fixed; top: 0; left: 0; 
+            width: 100%; 
+            height: 100dvh; /* Полная высота */
+            background: #fafaf8; /* Сплошной фон */
+            z-index: 2000; 
             display: none; flex-direction: column; justify-content: center; align-items: center;
-            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            /* Убрали blur, чтобы был чистый цвет */
         }
         .month-item { padding: 15px; font-size: 20px; color: #333; width: 100%; text-align: center; font-weight: 300; }
+        
+        /* Крестик закрытия */
+        .close-menu { 
+            position: absolute; 
+            top: env(safe-area-inset-top, 20px); 
+            right: 25px; 
+            font-size: 40px; color: #333; 
+        }
     </style>
 </head>
 <body>
@@ -96,6 +113,7 @@
     </div>
 
     <div id="month-menu">
+        <div class="close-menu" onclick="toggleMenu(false)">×</div>
         <div class="month-item" onclick="goToMonth(1)">Январь</div>
         <div class="month-item" onclick="goToMonth(2)">Февраль</div>
         <div class="month-item" onclick="goToMonth(3)">Март</div>
@@ -123,38 +141,58 @@
 
         function format(n) { return n.toString().padStart(3, '0'); }
 
-        function updateTheme(page) {
+        function updateAppearance(page) {
             const isSplash = splashPages.includes(page);
             const bgColor = isSplash ? "#000000" : "#fafaf8";
-            const gradColor = isSplash ? "rgba(0,0,0,1)" : "rgba(250,250,248,1)";
-            const transColor = isSplash ? "rgba(0,0,0,0)" : "rgba(250,250,248,0)";
             
+            // 1. Устанавливаем фон
             document.body.style.background = bgColor;
             themeMeta.setAttribute("content", bgColor);
-            grad.style.background = `linear-gradient(to bottom, ${transColor} 0%, ${gradColor} 100%)`;
             
-            const lines = document.querySelectorAll('.burger-line');
-            lines.forEach(l => l.style.background = isSplash ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.4)");
+            // 2. Включаем градиент ТОЛЬКО на темных заставках
+            if (isSplash) {
+                // Мягкий темный градиент
+                grad.style.background = `linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.8) 100%)`;
+                grad.style.display = 'block';
+            } else {
+                grad.style.display = 'none'; // Убираем градиент на цитатах
+            }
         }
 
-        function loadImg(pageNumber, isInstant = false) {
+        function loadImg(pageNumber, isInstant = false, isStart = false) {
             const num = format(pageNumber);
             const temp = new Image();
             
-            updateTheme(pageNumber);
+            updateAppearance(pageNumber);
 
             temp.onload = () => {
                 img.src = temp.src;
-                img.style.opacity = 1;
+                
+                // Мгновенно показываем, если не старт и не заставка 001
+                if (isInstant) {
+                    img.style.transition = 'none'; // Отключаем анимацию
+                    img.style.opacity = 1;
+                    // Включаем анимацию обратно через микропаузу
+                    setTimeout(() => img.style.transition = 'opacity 0.25s ease-in-out', 50);
+                } else {
+                    // Анимация ТОЛЬКО при старте для 001
+                    img.style.transition = 'opacity 0.8s ease-in-out';
+                    img.style.opacity = 1;
+                }
                 window.scrollTo(0, 0);
             };
 
             temp.onerror = () => { if (!temp.src.includes('.jpg')) temp.src = `pages/${num}.jpg`; };
 
-            if (!isInstant) img.style.opacity = 0; 
+            // Убираем opacity=0 при листании, чтобы не было скачков
+            if (isInstant) {
+                // Не гасим
+            } else {
+                img.style.opacity = 0; // Гасим только при старте
+            }
+            
             temp.src = `pages/${num}.JPG`;
 
-            // Сохраняем прогресс только если это не заставка и не первый запуск
             if (pageNumber !== 1) {
                 sessionStorage.setItem('sessionActive', 'true');
                 localStorage.setItem('lastLinePage', pageNumber);
@@ -165,43 +203,44 @@
             currentPage += step;
             if (currentPage < 1) currentPage = totalFiles;
             if (currentPage > totalFiles) currentPage = 1;
-            loadImg(currentPage, true);
+            loadImg(currentPage, true); // Мгновенная загрузка
         }
 
         function toggleMenu(s) { document.getElementById('month-menu').style.display = s ? 'flex' : 'none'; }
         
         function goToMonth(m) { 
             const monthPages = { 1:2, 2:34, 3:63, 4:95, 5:126, 6:158, 7:189, 8:221, 9:253, 10:284, 11:316, 12:347 };
-            currentPage = monthPages[m]; loadImg(currentPage); toggleMenu(false); 
+            currentPage = monthPages[m]; loadImg(currentPage, true); toggleMenu(false); 
         }
 
         function startApp() {
-            // Принудительно ставим заставку при каждом новом входе
             currentPage = 1;
-            loadImg(1, true);
+            loadImg(1, false, true); // Плавный старт для 001
             
             setTimeout(() => {
+                // Анимация растворения только для главной
+                img.style.transition = 'opacity 0.5s ease-in-out';
                 img.style.opacity = 0;
+                
                 setTimeout(() => {
                     const now = new Date();
                     const startYear = new Date(now.getFullYear(), 0, 0);
                     const dayOfYear = Math.floor((now - startYear) / 86400000);
                     const target = dayOfYear + OFFSET;
-                    
-                    // Проверяем: это новый вход или просто обновление страницы?
                     const isSession = sessionStorage.getItem('sessionActive');
                     const savedPage = localStorage.getItem('lastLinePage');
 
                     if (isSession && savedPage) {
                         currentPage = parseInt(savedPage);
                     } else {
-                        currentPage = target; // Всегда актуальная дата при новом открытии приложения
+                        currentPage = target;
                     }
                     
-                    loadImg(currentPage);
+                    // Переключаем на дату мгновенно
+                    loadImg(currentPage, true); 
                     menuBtn.style.opacity = 1;
-                }, 300); // Ускоренный переход на контент
-            }, 1500); // Сокращенное время показа главной заставки
+                }, 500); 
+            }, 1800);
         }
 
         window.addEventListener('resize', () => window.scrollTo(0, 0));
