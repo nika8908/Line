@@ -51,7 +51,7 @@
             pointer-events: none;
             z-index: 20;
             opacity: 0;
-            display: none; /* Изначально полностью отключен */
+            display: none;
             transition: opacity 0.2s ease-in-out;
         }
 
@@ -134,12 +134,10 @@
             if (isSplash) {
                 grad.style.display = 'block';
                 grad.style.background = `linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.8) 100%)`;
-                // Небольшая задержка, чтобы display:block успел сработать до изменения opacity
-                setTimeout(() => { grad.style.opacity = 1; }, 10);
+                grad.style.opacity = 1;
             } else {
                 grad.style.opacity = 0;
-                // Полностью отключаем блок после завершения анимации (0.2s)
-                setTimeout(() => { if(grad.style.opacity == 0) grad.style.display = 'none'; }, 200);
+                grad.style.display = 'none'; // Убираем мгновенно, чтобы не мелькал черный низ
             }
             
             const lines = document.querySelectorAll('.burger-line');
@@ -183,10 +181,9 @@
             currentPage = 1;
             loadImg(1, true);
             
-            // Заставка висит меньше времени (1.1с)
+            // Продлили время показа главной заставки до 2 секунд
             setTimeout(() => {
                 img.style.opacity = 0;
-                // Переход на контент запускается быстрее (через 0.2с после начала исчезновения)
                 setTimeout(() => {
                     const now = new Date();
                     const startYear = new Date(now.getFullYear(), 0, 0);
@@ -198,8 +195,8 @@
                     currentPage = (isSession && savedPage) ? parseInt(savedPage) : target;
                     loadImg(currentPage, true);
                     menuBtn.style.opacity = 1;
-                }, 200);
-            }, 1100);
+                }, 250); // Ускорили переход на контент
+            }, 2000); 
         }
 
         window.addEventListener('resize', () => window.scrollTo(0, 0));
