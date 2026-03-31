@@ -21,7 +21,7 @@
             overflow: hidden; 
             position: fixed; 
             font-family: -apple-system, sans-serif;
-            transition: background 0.3s ease;
+            transition: background 0.2s ease;
         }
 
         #main-container {
@@ -38,8 +38,8 @@
             height: 100%; 
             object-fit: cover; 
             display: block;
-            /* Ускорили переход: было 0.8s стало 0.4s */
-            transition: opacity 0.4s ease-in-out; 
+            /* Микросекундная скорость перехода */
+            transition: opacity 0.25s ease-in-out; 
             opacity: 0;
             z-index: 10;
         }
@@ -49,10 +49,10 @@
             bottom: 0;
             left: 0;
             width: 100%;
-            height: 18dvh; 
+            height: 8dvh; /* Уменьшили высоту градиента, чтобы не мешал тексту */
             pointer-events: none;
             z-index: 20;
-            transition: background 0.3s ease;
+            transition: background 0.2s ease;
         }
 
         .nav-zone { 
@@ -69,7 +69,7 @@
             z-index: 1000; 
             width: 26px; height: 18px; 
             display: flex; flex-direction: column; justify-content: space-between; 
-            opacity: 0; transition: opacity 0.6s ease;
+            opacity: 0; transition: opacity 0.4s ease;
         }
         .burger-line { width: 100%; height: 1.2px; background: rgba(0,0,0,0.4); border-radius: 0.5px; }
 
@@ -154,9 +154,10 @@
             if (!isInstant) img.style.opacity = 0; 
             temp.src = `pages/${num}.JPG`;
 
+            // Сохраняем прогресс только если это не заставка и не первый запуск
             if (pageNumber !== 1) {
+                sessionStorage.setItem('sessionActive', 'true');
                 localStorage.setItem('lastLinePage', pageNumber);
-                localStorage.setItem('lastUpdateDate', new Date().getDate());
             }
         }
 
@@ -175,10 +176,10 @@
         }
 
         function startApp() {
+            // Принудительно ставим заставку при каждом новом входе
             currentPage = 1;
             loadImg(1, true);
             
-            // Ускорили время показа заставки (1.8с вместо 2.2с)
             setTimeout(() => {
                 img.style.opacity = 0;
                 setTimeout(() => {
@@ -186,18 +187,21 @@
                     const startYear = new Date(now.getFullYear(), 0, 0);
                     const dayOfYear = Math.floor((now - startYear) / 86400000);
                     const target = dayOfYear + OFFSET;
-                    const savedDate = localStorage.getItem('lastUpdateDate');
+                    
+                    // Проверяем: это новый вход или просто обновление страницы?
+                    const isSession = sessionStorage.getItem('sessionActive');
                     const savedPage = localStorage.getItem('lastLinePage');
 
-                    if (savedDate == now.getDate() && savedPage && savedPage != 1) {
+                    if (isSession && savedPage) {
                         currentPage = parseInt(savedPage);
                     } else {
-                        currentPage = target;
+                        currentPage = target; // Всегда актуальная дата при новом открытии приложения
                     }
+                    
                     loadImg(currentPage);
                     menuBtn.style.opacity = 1;
-                }, 500); // Ускорили переход на дату (0.5с вместо 0.8с)
-            }, 1800);
+                }, 300); // Ускоренный переход на контент
+            }, 1500); // Сокращенное время показа главной заставки
         }
 
         window.addEventListener('resize', () => window.scrollTo(0, 0));
