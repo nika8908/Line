@@ -2,73 +2,206 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Линия</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>ЛИНИЯ</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="icon-512.png">
+    
+    <meta id="theme-meta" name="theme-color" content="#000000">
+
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #fafaf8; display: flex; justify-content: center; align-items: center; }
-        #calendar-img { max-width: 100%; max-height: 100%; object-fit: contain; }
-        .container { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; cursor: pointer; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        html, body { 
+            width: 100%; 
+            height: 100dvh; 
+            background: #000; 
+            overflow: hidden; 
+            position: fixed; 
+            font-family: -apple-system, sans-serif;
+        }
+
+        #main-container {
+            position: relative; 
+            width: 100vw; 
+            height: 100dvh;
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+        }
+
+        #main-img {
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover; 
+            display: block;
+            transition: opacity 0.25s ease-in-out; 
+            opacity: 0;
+            z-index: 10;
+        }
+
+        #grad-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 6dvh; 
+            pointer-events: none;
+            z-index: 20;
+            opacity: 0;
+            display: none;
+            transition: opacity 0.2s ease-in-out;
+        }
+
+        .nav-zone { 
+            position: absolute; top: 0; width: 45%; height: 100%; 
+            z-index: 100; -webkit-tap-highlight-color: transparent; 
+        }
+        .prev { left: 0; }
+        .next { right: 0; }
+
+        #menu-btn {
+            position: fixed; 
+            top: env(safe-area-inset-top, 25px); 
+            right: 20px; 
+            z-index: 1000; 
+            width: 26px; height: 18px; 
+            display: flex; flex-direction: column; justify-content: space-between; 
+            opacity: 0; transition: opacity 0.4s ease;
+        }
+        .burger-line { width: 100%; height: 1.2px; background: rgba(255, 255, 255, 0.9); border-radius: 0.5px; }
+
+        #month-menu {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100dvh;
+            background: #fafaf8; z-index: 2000; 
+            display: none; flex-direction: column; justify-content: center; align-items: center;
+        }
+        .month-item { padding: 15px; font-size: 20px; color: #333; width: 100%; text-align: center; font-weight: 300; }
+        .close-menu { position: absolute; top: env(safe-area-inset-top, 20px); right: 25px; font-size: 40px; color: #333; }
     </style>
 </head>
 <body>
 
-<div class="container" onclick="nextPage()">
-    <img id="calendar-img" src="" alt="Загрузка...">
-</div>
+    <div id="main-container">
+        <div class="nav-zone prev" onclick="changePage(-1)"></div>
+        <img id="main-img" src="">
+        <div id="grad-overlay"></div>
+        <div class="nav-zone next" onclick="changePage(1)"></div>
+    </div>
 
-<script>
-    // --- ТВОИ НАСТРОЙКИ ---
-    const TOTAL_IMAGES = 378; // Всего файлов
-    const START_OFFSET = 2;   // 1 главная обложка + 1 заставка января
+    <div id="menu-btn" onclick="toggleMenu(true)">
+        <div class="burger-line"></div><div class="burger-line"></div><div class="burger-line"></div>
+    </div>
 
-    function getIndexByDate() {
-        const now = new Date();
-        const start = new Date(now.getFullYear(), 0, 0);
-        const dayOfYear = Math.floor((now - start) / 86400000);
-        const month = now.getMonth();
-        const isFirstDay = now.getDate() === 1;
+    <div id="month-menu">
+        <div class="close-menu" onclick="toggleMenu(false)">×</div>
+        <div class="month-item" onclick="goToMonth(0)">Январь</div>
+        <div class="month-item" onclick="goToMonth(1)">Февраль</div>
+        <div class="month-item" onclick="goToMonth(2)">Март</div>
+        <div class="month-item" onclick="goToMonth(3)">Апрель</div>
+        <div class="month-item" onclick="goToMonth(4)">Май</div>
+        <div class="month-item" onclick="goToMonth(5)">Июнь</div>
+        <div class="month-item" onclick="goToMonth(6)">Июль</div>
+        <div class="month-item" onclick="goToMonth(7)">Август</div>
+        <div class="month-item" onclick="goToMonth(8)">Сентябрь</div>
+        <div class="month-item" onclick="goToMonth(9)">Октябрь</div>
+        <div class="month-item" onclick="goToMonth(10)">Ноябрь</div>
+        <div class="month-item" onclick="goToMonth(11)">Декабрь</div>
+    </div>
 
-        // Формула: день года + сколько заставок месяцев уже пройдено
-        let index = dayOfYear + month + START_OFFSET;
+    <script>
+        let currentPage = 1;
+        const totalFiles = 378;
+        
+        // Массив, где индекс — это месяц (0-11), а значение — номер страницы 1-го числа этого месяца
+        const monthFirstPages = [2, 34, 63, 95, 126, 158, 189, 221, 253, 284, 316, 347];
+        const splashPages = [1, 2, 34, 63, 95, 126, 158, 189, 221, 253, 284, 316, 347];
 
-        // Если сегодня 1-е число — показываем заставку месяца (она на 1 раньше дня)
-        if (isFirstDay) {
-            index = index - 1;
+        const img = document.getElementById('main-img');
+        const grad = document.getElementById('grad-overlay');
+        const menuBtn = document.getElementById('menu-btn');
+        const themeMeta = document.getElementById('theme-meta');
+
+        function format(n) { return n.toString().padStart(3, '0'); }
+
+        function syncAppearance(page) {
+            const isSplash = splashPages.includes(page);
+            const bgColor = isSplash ? "#000000" : "#fafaf8";
+            document.body.style.background = bgColor;
+            themeMeta.setAttribute("content", bgColor);
+            
+            if (isSplash) {
+                grad.style.display = 'block';
+                grad.style.background = `linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.8) 100%)`;
+                setTimeout(() => { grad.style.opacity = 1; }, 10);
+            } else {
+                grad.style.opacity = 0;
+                grad.style.display = 'none';
+            }
+            const lines = document.querySelectorAll('.burger-line');
+            lines.forEach(l => l.style.background = isSplash ? "rgba(255,255,255,0.9)" : "rgba(0,0,0,0.4)");
         }
-        return index;
-    }
 
-    // 1. Пытаемся взять сохраненную страницу
-    let saved = localStorage.getItem('savedLinePage');
-    let currentIndex;
+        function loadImg(pageNumber, isInstant = false) {
+            const num = format(pageNumber);
+            const temp = new Image();
+            temp.onload = () => {
+                syncAppearance(pageNumber);
+                img.src = temp.src;
+                img.style.opacity = 1;
+            };
+            temp.onerror = () => { if (!temp.src.includes('.jpg')) temp.src = `pages/${num}.jpg`; };
+            if (!isInstant) img.style.opacity = 0; 
+            temp.src = `pages/${num}.JPG`;
 
-    if (saved) {
-        currentIndex = parseInt(saved);
-    } else {
-        currentIndex = getIndexByDate();
-    }
+            if (pageNumber !== 1) {
+                sessionStorage.setItem('sessionActive', 'true');
+                localStorage.setItem('lastLinePage', pageNumber);
+            }
+        }
 
-    function updateImage() {
-        // Форматируем в 001, 002...
-        const fileName = String(currentIndex).padStart(3, '0') + '.jpg';
-        const img = document.getElementById('calendar-img');
+        function changePage(step) {
+            currentPage += step;
+            if (currentPage < 1) currentPage = totalFiles;
+            if (currentPage > totalFiles) currentPage = 1;
+            loadImg(currentPage, true);
+        }
+
+        function toggleMenu(s) { document.getElementById('month-menu').style.display = s ? 'flex' : 'none'; }
         
-        // ВАЖНО: Проверь, лежит ли index.html рядом с папкой img
-        img.src = 'img/' + fileName;
-        
-        localStorage.setItem('savedLinePage', currentIndex);
-        
-        // Для проверки в консоли (F12)
-        console.log("Текущий файл:", fileName);
-    }
+        function goToMonth(mIndex) { 
+            currentPage = monthFirstPages[mIndex]; 
+            loadImg(currentPage, true); 
+            toggleMenu(false); 
+        }
 
-    function nextPage() {
-        currentIndex++;
-        if (currentIndex > TOTAL_IMAGES) currentIndex = 1;
-        updateImage();
-    }
+        function startApp() {
+            loadImg(1, true); // Показываем 001
+            
+            setTimeout(() => {
+                img.style.opacity = 0;
+                setTimeout(() => {
+                    const now = new Date();
+                    const currentMonth = now.getMonth(); // 0-11
+                    const currentDay = now.getDate(); // 1-31
+                    
+                    // Вычисляем целевую страницу: Базовая страница месяца + (текущий день - 1)
+                    const target = monthFirstPages[currentMonth] + (currentDay - 1);
+                    
+                    const isSession = sessionStorage.getItem('sessionActive');
+                    const savedPage = localStorage.getItem('lastLinePage');
 
-    updateImage();
-</script>
+                    currentPage = (isSession && savedPage) ? parseInt(savedPage) : target;
+                    loadImg(currentPage, true);
+                    menuBtn.style.opacity = 1;
+                }, 250);
+            }, 2000);
+        }
+
+        window.addEventListener('resize', () => window.scrollTo(0, 0));
+        startApp();
+    </script>
 </body>
 </html>
