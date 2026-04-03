@@ -5,97 +5,70 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Линия</title>
     <style>
-        /* Убираем все лишнее, чтобы картинка была на весь экран */
-        body, html {
-            margin: 0; padding: 0; width: 100%; height: 100%;
-            overflow: hidden; background-color: #fafaf8; /* Твой фирменный цвет */
-            display: flex; justify-content: center; align-items: center;
-        }
-
-        #calendar-img {
-            max-width: 100%; max-height: 100%;
-            width: auto; height: auto;
-            object-fit: contain;
-            transition: opacity 0.3s ease; /* Плавный переход */
-        }
-
-        .container { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #fafaf8; display: flex; justify-content: center; align-items: center; }
+        #calendar-img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        .container { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; cursor: pointer; }
     </style>
 </head>
 <body>
 
 <div class="container" onclick="nextPage()">
-    <img id="calendar-img" src="" alt="Страница календаря">
+    <img id="calendar-img" src="" alt="Загрузка...">
 </div>
 
 <script>
-    // --- НАСТРОЙКИ (Проверь эти цифры!) ---
-    
-    // Сколько всего картинок перед 1 января? 
-    // Если у тебя 1 Главная обложка + 1 Заставка Января, то здесь "2".
-    const TOTAL_COVERS_BEFORE_JAN = 2; 
+    // --- ТВОИ НАСТРОЙКИ ---
+    const TOTAL_IMAGES = 378; // Всего файлов
+    const START_OFFSET = 2;   // 1 главная обложка + 1 заставка января
 
-    // --- ЛОГИКА ОПРЕДЕЛЕНИЯ ДАТЫ ---
-
-    function getAutoIndex() {
+    function getIndexByDate() {
         const now = new Date();
-        const dayOfMonth = now.getDate(); // Какое сегодня число (1, 2, 3...)
-        const month = now.getMonth();     // Текущий месяц (0-11)
-        
-        // Считаем день года (1-366)
         const start = new Date(now.getFullYear(), 0, 0);
-        const diff = now - start;
-        const oneDay = 1000 * 60 * 60 * 24;
-        const dayOfYear = Math.floor(diff / oneDay);
+        const dayOfYear = Math.floor((now - start) / 86400000);
+        const month = now.getMonth();
+        const isFirstDay = now.getDate() === 1;
 
-        // Смещение: Базовые обложки + количество прошедших заставок месяцев
-        // (В январе passedMonths = 0, в апреле = 3)
-        let offset = TOTAL_COVERS_BEFORE_JAN + month;
+        // Формула: день года + сколько заставок месяцев уже пройдено
+        let index = dayOfYear + month + START_OFFSET;
 
-        if (dayOfMonth === 1) {
-            // Если сегодня 1-е число — открываем ЗАСТАВКУ МЕСЯЦА
-            return dayOfYear + (offset - 1); 
-        } else {
-            // Если сегодня 2-е число и далее — прыгаем через заставку на саму дату
-            return dayOfYear + offset;
+        // Если сегодня 1-е число — показываем заставку месяца (она на 1 раньше дня)
+        if (isFirstDay) {
+            index = index - 1;
         }
+        return index;
     }
 
-    // --- УПРАВЛЕНИЕ СТРАНИЦАМИ ---
-
+    // 1. Пытаемся взять сохраненную страницу
+    let saved = localStorage.getItem('savedLinePage');
     let currentIndex;
-    const saved = localStorage.getItem('savedLinePage');
 
     if (saved) {
         currentIndex = parseInt(saved);
     } else {
-        currentIndex = getAutoIndex();
+        currentIndex = getIndexByDate();
     }
 
     function updateImage() {
-        // Форматируем число в вид 001, 095 и т.д.
+        // Форматируем в 001, 002...
         const fileName = String(currentIndex).padStart(3, '0') + '.jpg';
         const img = document.getElementById('calendar-img');
         
-        img.style.opacity = '0.2'; // Эффект подгрузки
+        // ВАЖНО: Проверь, лежит ли index.html рядом с папкой img
         img.src = 'img/' + fileName;
         
-        img.onload = () => { img.style.opacity = '1'; };
-        
-        // Сохраняем прогресс
         localStorage.setItem('savedLinePage', currentIndex);
+        
+        // Для проверки в консоли (F12)
+        console.log("Текущий файл:", fileName);
     }
 
     function nextPage() {
         currentIndex++;
-        // Если дошли до конца (378 страниц), возвращаемся в начало или на обложку
-        if (currentIndex > 378) currentIndex = 1; 
+        if (currentIndex > TOTAL_IMAGES) currentIndex = 1;
         updateImage();
     }
 
-    // Запуск при открытии
     updateImage();
-
 </script>
 </body>
 </html>
