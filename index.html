@@ -13,15 +13,44 @@
 
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body { width: 100%; height: 100dvh; background: #000; overflow: hidden; position: fixed; font-family: -apple-system, sans-serif; }
+        html, body { 
+            width: 100%; 
+            height: 100dvh; 
+            background: #000; 
+            overflow: hidden; 
+            position: fixed; 
+            font-family: -apple-system, sans-serif; 
+            /* Плавная смена цвета фона при переходе между типами страниц */
+            transition: background-color 0.6s ease-in-out;
+        }
         #main-container { position: relative; width: 100vw; height: 100dvh; display: flex; justify-content: center; align-items: center; }
-        #main-img { width: 100%; height: 100%; object-fit: cover; display: block; transition: opacity 0.25s ease-in-out; opacity: 0; z-index: 10; }
-        #grad-overlay { position: absolute; bottom: 0; left: 0; width: 100%; height: 6dvh; pointer-events: none; z-index: 20; opacity: 0; display: none; transition: opacity 0.2s ease-in-out; }
+        #main-img { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover; 
+            display: block; 
+            /* Увеличенное время перехода для мягкости */
+            transition: opacity 0.6s ease-in-out; 
+            opacity: 0; 
+            z-index: 10; 
+        }
+        #grad-overlay { 
+            position: absolute; 
+            bottom: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 8dvh; 
+            pointer-events: none; 
+            z-index: 20; 
+            opacity: 0; 
+            transition: opacity 0.4s ease-in-out; 
+            background: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.8) 100%);
+        }
         .nav-zone { position: absolute; top: 0; width: 45%; height: 100%; z-index: 100; -webkit-tap-highlight-color: transparent; }
         .prev { left: 0; }
         .next { right: 0; }
         #menu-btn { position: fixed; top: env(safe-area-inset-top, 25px); right: 20px; z-index: 1000; width: 26px; height: 18px; display: flex; flex-direction: column; justify-content: space-between; opacity: 0; transition: opacity 0.4s ease; }
-        .burger-line { width: 100%; height: 1.2px; background: rgba(255, 255, 255, 0.9); border-radius: 0.5px; }
+        .burger-line { width: 100%; height: 1.2px; background: rgba(255, 255, 255, 0.9); border-radius: 0.5px; transition: background 0.6s ease; }
         #month-menu { position: fixed; top: 0; left: 0; width: 100%; height: 100dvh; background: #fafaf8; z-index: 2000; display: none; flex-direction: column; justify-content: center; align-items: center; }
         .month-item { padding: 15px; font-size: 20px; color: #333; width: 100%; text-align: center; font-weight: 300; }
         .close-menu { position: absolute; top: env(safe-area-inset-top, 20px); right: 25px; font-size: 40px; color: #333; }
@@ -60,9 +89,7 @@
         let currentPage = 1;
         const totalFiles = 378;
         
-        // Номера заставок месяцев (Янв, Фев, Мар, Апр...)
         const splashMonthPages = [2, 34, 63, 95, 126, 158, 189, 221, 253, 284, 316, 347];
-        // Номера первых чисел месяцев
         const monthFirstDates = [3, 35, 64, 96, 127, 159, 190, 222, 254, 285, 317, 348];
         const splashPages = [1, ...splashMonthPages];
 
@@ -76,31 +103,33 @@
         function syncAppearance(page) {
             const isSplash = splashPages.includes(page);
             const bgColor = isSplash ? "#000000" : "#fafaf8";
+            
             document.body.style.background = bgColor;
             themeMeta.setAttribute("content", bgColor);
             
-            if (isSplash) {
-                grad.style.display = 'block';
-                grad.style.background = `linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.8) 100%)`;
-                setTimeout(() => { grad.style.opacity = 1; }, 10);
-            } else {
-                grad.style.opacity = 0;
-                grad.style.display = 'none';
-            }
+            // Плавное проявление/затухание градиента
+            grad.style.opacity = isSplash ? 1 : 0;
+            
             const lines = document.querySelectorAll('.burger-line');
-            lines.forEach(l => l.style.background = isSplash ? "rgba(255,255,255,0.9)" : "rgba(0,0,0,0.4)");
+            lines.forEach(l => l.style.background = isSplash ? "rgba(255, 255, 255, 0.9)" : "rgba(0, 0, 0, 0.4)");
         }
 
         function loadImg(pageNumber, isInstant = false) {
             const num = format(pageNumber);
             const temp = new Image();
+            
+            if (!isInstant) img.style.opacity = 0;
+
             temp.onload = () => {
                 syncAppearance(pageNumber);
                 img.src = temp.src;
-                img.style.opacity = 1;
+                // Небольшая задержка перед проявлением для чистоты отрисовки
+                setTimeout(() => {
+                    img.style.opacity = 1;
+                }, 40);
             };
+            
             temp.onerror = () => { if (!temp.src.includes('.jpg')) temp.src = `pages/${num}.jpg`; };
-            if (!isInstant) img.style.opacity = 0; 
             temp.src = `pages/${num}.JPG`;
 
             if (pageNumber !== 1) {
@@ -125,21 +154,21 @@
         }
 
         function startApp() {
-            loadImg(1, true); // Главная 001
+            loadImg(1, true); 
             
             setTimeout(() => {
+                // Медленно гасим стартовый экран
                 img.style.opacity = 0;
+                
                 setTimeout(() => {
                     const now = new Date();
                     const currentMonth = now.getMonth(); 
                     const currentDay = now.getDate(); 
 
                     let target;
-                    // ЛОГИКА: Если сегодня 1-е число — открываем заставку месяца
                     if (currentDay === 1) {
                         target = splashMonthPages[currentMonth];
                     } else {
-                        // Иначе — открываем актуальное число
                         target = monthFirstDates[currentMonth] + (currentDay - 1);
                     }
                     
@@ -147,9 +176,11 @@
                     const savedPage = localStorage.getItem('lastLinePage');
 
                     currentPage = (isSession && savedPage) ? parseInt(savedPage) : target;
-                    loadImg(currentPage, true);
+                    
+                    // Загружаем целевую страницу с плавным проявлением
+                    loadImg(currentPage, false);
                     menuBtn.style.opacity = 1;
-                }, 250);
+                }, 600); // Пауза на черном фоне для мягкого перехода
             }, 2000);
         }
 
