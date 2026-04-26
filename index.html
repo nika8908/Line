@@ -20,7 +20,6 @@
             overflow: hidden; 
             position: fixed; 
             font-family: -apple-system, sans-serif; 
-            /* Плавная смена цвета фона при переходе между типами страниц */
             transition: background-color 0.6s ease-in-out;
         }
         #main-container { position: relative; width: 100vw; height: 100dvh; display: flex; justify-content: center; align-items: center; }
@@ -29,7 +28,6 @@
             height: 100%; 
             object-fit: cover; 
             display: block; 
-            /* Увеличенное время перехода для мягкости */
             transition: opacity 0.6s ease-in-out; 
             opacity: 0; 
             z-index: 10; 
@@ -106,8 +104,6 @@
             
             document.body.style.background = bgColor;
             themeMeta.setAttribute("content", bgColor);
-            
-            // Плавное проявление/затухание градиента
             grad.style.opacity = isSplash ? 1 : 0;
             
             const lines = document.querySelectorAll('.burger-line');
@@ -123,14 +119,13 @@
             temp.onload = () => {
                 syncAppearance(pageNumber);
                 img.src = temp.src;
-                // Небольшая задержка перед проявлением для чистоты отрисовки
-                setTimeout(() => {
-                    img.style.opacity = 1;
-                }, 40);
+                setTimeout(() => { img.style.opacity = 1; }, 40);
             };
             
-            temp.onerror = () => { if (!temp.src.includes('.jpg')) temp.src = `pages/${num}.jpg`; };
-            temp.src = `pages/${num}.JPG`;
+            // Хак для сброса кэша на Android
+            const cacheBuster = `?v=${new Date().getDate()}`;
+            temp.onerror = () => { if (!temp.src.includes('.jpg')) temp.src = `pages/${num}.jpg${cacheBuster}`; };
+            temp.src = `pages/${num}.JPG${cacheBuster}`;
 
             if (pageNumber !== 1) {
                 sessionStorage.setItem('sessionActive', 'true');
@@ -153,36 +148,44 @@
             toggleMenu(false); 
         }
 
+        function getAutoTarget() {
+            const now = new Date();
+            const currentMonth = now.getMonth(); 
+            const currentDay = now.getDate(); 
+            if (currentDay === 1) return splashMonthPages[currentMonth];
+            return monthFirstDates[currentMonth] + (currentDay - 1);
+        }
+
         function startApp() {
             loadImg(1, true); 
             
             setTimeout(() => {
-                // Медленно гасим стартовый экран
                 img.style.opacity = 0;
                 
                 setTimeout(() => {
-                    const now = new Date();
-                    const currentMonth = now.getMonth(); 
-                    const currentDay = now.getDate(); 
-
-                    let target;
-                    if (currentDay === 1) {
-                        target = splashMonthPages[currentMonth];
-                    } else {
-                        target = monthFirstDates[currentMonth] + (currentDay - 1);
-                    }
-                    
+                    const target = getAutoTarget();
                     const isSession = sessionStorage.getItem('sessionActive');
                     const savedPage = localStorage.getItem('lastLinePage');
 
+                    // Если это новый запуск (не переход внутри сессии), всегда берем актуальную дату
                     currentPage = (isSession && savedPage) ? parseInt(savedPage) : target;
                     
-                    // Загружаем целевую страницу с плавным проявлением
                     loadImg(currentPage, false);
                     menuBtn.style.opacity = 1;
-                }, 600); // Пауза на черном фоне для мягкого перехода
+                }, 600);
             }, 2000);
         }
+
+        // КРИТИЧНО ДЛЯ ANDROID: Обновление даты при разворачивании приложения
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "visible") {
+                const target = getAutoTarget();
+                // Если календарь "завис" на старой дате, обновляем его
+                if (!sessionStorage.getItem('sessionActive') && currentPage !== target) {
+                    location.reload();
+                }
+            }
+        });
 
         window.addEventListener('resize', () => window.scrollTo(0, 0));
         startApp();
